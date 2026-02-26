@@ -31,20 +31,6 @@ const Contact = () => (
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <div className="bg-emerald-600 p-3 rounded-full">
-              <Mail className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold">Email</h3>
-              <a
-                href="mailto:araucaniatours@gmail.com"
-                className="text-emerald-200 hover:text-white transition-colors"
-              >
-                araucaniatours@gmail.com
-              </a>
-            </div>
-          </div>
 
           <div className="flex items-center space-x-4">
             <div className="bg-emerald-600 p-3 rounded-full">

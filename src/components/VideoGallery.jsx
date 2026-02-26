@@ -7,22 +7,15 @@ const videos = [
     title: 'Recorrido por la Araucanía',
     description: 'Descubre los lugares más impresionantes de la región',
     thumbnail: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // Reemplazar con video real
-    duration: '3:45',
+    videoUrl: '/araucania.mp4', // Reemplazar con video real
+    duration: '0:23',
   },
   {
-    title: 'Interior de nuestros vehículos',
-    description: 'Conoce la comodidad de nuestros minibuses',
-    thumbnail: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // Reemplazar con video real
+    title: 'Cascadas de la Araucanía',
+    description: 'Vive la magia de las cascadas en medio del bosque nativo',
+    thumbnail: 'https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?auto=format&fit=crop&w=800&q=80',
+    videoUrl: '/Cascada.mp4',
     duration: '2:15',
-  },
-  {
-    title: 'Testimonios de clientes',
-    description: 'Lo que dicen nuestros pasajeros',
-    thumbnail: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=800&q=80',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // Reemplazar con video real
-    duration: '4:20',
   },
 ];
 

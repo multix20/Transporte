@@ -8,10 +8,10 @@ const Footer = () => (
           <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold">AT</span>
           </div>
-          <span className="text-lg font-semibold">Araucania Tours</span>
+          <span className="text-lg font-semibold">Sur Travel</span>
         </div>
         <p className="text-emerald-400 text-sm text-center md:text-right">
-          © 2024 Araucania Tours. Conectando la Araucanía con comodidad y seguridad.
+          © 2026 Sur Travel. Conectando la Araucanía con comodidad y seguridad.
         </p>
       </div>
     </div>

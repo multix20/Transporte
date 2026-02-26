@@ -30,9 +30,9 @@ const Header = () => {
           {/* Logo */}
           <div className="flex items-center space-x-2">
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-green-700 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">AT</span>
+              <span className="text-white font-bold text-lg">ST</span>
             </div>
-            <span className="text-xl font-bold text-emerald-800 text-black">Araucania Tours</span>
+            <span className="text-xl font-bold text-emerald-800 text-black">Surtravel</span>
           </div>
 
           {/* Desktop nav */}

@@ -78,7 +78,7 @@ const Hero = () => {
 
 <h1
   key={current}
-  className="text-5xl md:text-7xl font-extrabold text-white mb-4 drop-shadow-xl"
+  className="text-5xl md:text-7xl font-extrabold text-white mb-4"
 >
   {slides[current].title}
 </h1>

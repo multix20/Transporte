@@ -4,7 +4,6 @@ import { Car, Users, Shield, Clock, Star } from 'lucide-react';
 const advantages = [
   { icon: Car, text: 'Vehículos nuevos y en perfectas condiciones' },
   { icon: Users, text: 'Conductores profesionales y experimentados' },
-  { icon: Shield, text: 'Seguros de viaje incluidos' },
   { icon: Clock, text: 'Puntualidad garantizada' },
   { icon: Star, text: 'Servicio de calidad premium' },
 ];

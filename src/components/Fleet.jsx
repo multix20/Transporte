@@ -4,7 +4,7 @@ import { Users, Briefcase, X, ChevronLeft, ChevronRight } from 'lucide-react';
 const vehicles = [
   {
     name: 'Mercedes Sprinter',
-    capacity: '16 pasajeros',
+    capacity: '15 pasajeros',
     features: ['Aire acondicionado', 'Máximo confort', 'Asientos reclinables', 'Audio/Video', 'Cinturones de seguridad'],
     images: [
       '/sprinter-frontal.jpg',

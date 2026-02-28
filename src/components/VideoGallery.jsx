@@ -10,10 +10,10 @@ const videos = [
     youtubeId: 'AlhznqqpaAk',
   },
   {
-    title: '3 Lugares impresionantes de la Araucanía',
+    title: 'Chile que te quiero: La Araucanía',
     description: 'Vive la magia de los paisajes únicos del sur de Chile',
-    thumbnail: 'https://img.youtube.com/vi/4aV7pCbHtlw/maxresdefault.jpg',
-    youtubeId: '4aV7pCbHtlw',
+    thumbnail: 'https://img.youtube.com/vi/dnqw5pMT7Jc/maxresdefault.jpg',
+    youtubeId: 'dnqw5pMT7Jc',
   },
 ];
 
@@ -29,7 +29,7 @@ const VideoGallery = () => {
               Vive la Experiencia
             </h2>
             <p className="text-xl text-emerald-700 max-w-2xl mx-auto">
-              Hacemos cada viaje memorable
+              Cada viaje es memorable
             </p>
           </div>
 

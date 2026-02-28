@@ -16,7 +16,7 @@ const slides = [
   {
     image: 'https://plus.unsplash.com/premium_photo-1738099067629-e0931981fe45?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     title: 'Termas y Relax',
-    subtitle: 'Aguas termales',
+    subtitle: 'Aguas termales, spa y bienestar en medio de la naturaleza',
   },
   {
     image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Villarrica%2C_Lago_Villarrica%2C_2019_%2802%29.jpg/960px-Villarrica%2C_Lago_Villarrica%2C_2019_%2802%29.jpg',

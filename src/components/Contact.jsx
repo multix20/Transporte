@@ -28,6 +28,9 @@ const Contact = () => (
               >
                 +56 9 5156 9704
               </a>
+              <a href="https://wa.me/56997035692" className="block text-emerald-200 hover:text-white transition-colors">
+                +56 9 9703 5692
+              </a>
             </div>
           </div>
 

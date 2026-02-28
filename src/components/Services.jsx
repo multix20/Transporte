@@ -73,18 +73,18 @@ const Services = () => (
                 alt={service.title}
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10 group-hover:from-black/90 transition-all duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
               <div className="absolute inset-0 flex flex-col justify-end p-6">
                 <div className="w-11 h-11 bg-emerald-500/90 rounded-xl flex items-center justify-center mb-3">
                   <Icon size={22} className="text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">{service.title}</h3>
-                <p className="text-white/80 text-sm mb-4 leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <p className="text-white/80 text-sm mb-4 leading-relaxed">
                   {service.description}
                 </p>
                 <a
                   href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(service.mensaje)}`}
-                  className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 w-fit opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0"
+                  className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 w-fit"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

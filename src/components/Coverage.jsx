@@ -37,7 +37,7 @@ const Coverage = () => (
 
           <div className="relative">
             <img
-              src="/nieve.jpg"
+              src="/nieve.webp"
               alt="Paisaje de la Araucanía"
               className="w-full h-64 object-cover rounded-xl shadow-lg"
             />

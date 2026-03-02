@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 
 const slides = [
   {
-    image: 'https://images.unsplash.com/photo-1679672033772-fa8a6cb17d04?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    image: '/araucaria.webp',
     title: 'Descubre la Araucanía',
     subtitle: 'Lagos, volcanes y naturaleza sin igual',
   },

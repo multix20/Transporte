@@ -54,8 +54,8 @@ export default function Reservas() {
         nombre: form.nombre, telefono: form.telefono,
         ruta: ruta.label, fecha, vuelo_numero: "SIN_VUELO",
         pasajeros: Number(form.pasajeros), tipo_reserva: tipoReserva,
-        estado: "pendiente_pago", monto_pagado: aPagar, monto_total: montoTotal,
-        modo_pago: modoPago, notas: form.notas || "",
+        estado: "pendiente_pago",
+        notas: `${form.notas || ""} | Pago: ${modoPago==="abono"?"50% abono ("+precio(aPagar)+")":"Completo ("+precio(montoTotal)+")"}`.trim(),
       }]).select().single();
       if (dbErr) throw new Error("Error al guardar reserva");
       const msg = encodeURIComponent(

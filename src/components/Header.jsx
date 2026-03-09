@@ -1,327 +1,436 @@
-import React from 'react';
-import { useState, useEffect } from 'react';
-import { Menu, X, MapPin, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Menu, X, ChevronRight, MapPin, LogIn, UserPlus } from 'lucide-react';
 
-const Header = () => {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+/**
+ * Header — estilo Uber
+ * Marca: LLEVU  (llevo + mapudungún = "te llevo")
+ *
+ * Estados:
+ *  - guest  → "Inicia sesión"  + pill "Regístrate"  + ≡
+ *  - logged → pill "Juan ▾"                          + ≡
+ *
+ * Responsive:
+ *  - móvil  → solo logo + acciones + hamburger
+ *  - desktop → logo + nav links + acciones + hamburger oculto
+ */
+
+export default function Header({ user = null }) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [scrolled,   setScrolled]   = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow = isDrawerOpen ? 'hidden' : '';
+    document.body.style.overflow = drawerOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [isDrawerOpen]);
+  }, [drawerOpen]);
 
   const navLinks = [
-    { href: '#inicio',    label: 'Inicio',    desc: 'Bienvenida' },
-    { href: '#servicios', label: 'Servicios', desc: 'Lo que ofrecemos' },
+    { href: '#inicio',    label: 'Inicio'    },
+    { href: '#servicios', label: 'Servicios' },
+    { href: '#ventajas',  label: 'Ventajas'  },
+    { href: '#reservas',  label: 'Reservar'  },
+  ];
+
+  const drawerItems = [
+    { href: '#inicio',    label: 'Inicio',    desc: 'Bienvenida'        },
+    { href: '#servicios', label: 'Servicios', desc: 'Lo que ofrecemos'  },
     { href: '#ventajas',  label: 'Ventajas',  desc: 'Por qué elegirnos' },
-    { href: '#contacto',  label: 'Contacto',  desc: 'Escríbenos' },
+    { href: '#reservas',  label: 'Reservar',  desc: 'Elige tu viaje'    },
+    { href: '#contacto',  label: 'Contacto',  desc: 'Escríbenos'        },
   ];
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500&display=swap');
+      <style>{CSS}</style>
 
-        .header-root { font-family: 'DM Sans', sans-serif; }
+      {/* ── BAR ── */}
+      <header className={`hdr ${scrolled ? 'hdr--scrolled' : ''}`}>
+        <div className="hdr__inner">
 
-        .header-bar {
-          position: fixed; top: 0; left: 0; right: 0; z-index: 50;
-          transition: all 0.4s ease;
-        }
+          {/* Logo */}
+          <a href="#inicio" className="hdr__logo" aria-label="LLEVU - Inicio">
+            <span className="hdr__logo-mark">LL</span>
+            <span className="hdr__logo-name">LLEVU</span>
+          </a>
 
-        @media (min-width: 768px) {
-          .header-bar {
-            background: white;
-            box-shadow: 0 1px 20px rgba(0,0,0,0.08);
-          }
-        }
-
-        @media (max-width: 767px) {
-          .header-bar.top {
-            background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 100%);
-            box-shadow: none;
-          }
-          .header-bar.scrolled {
-            background: #1a3d2b;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.2);
-          }
-        }
-
-        .header-inner {
-          max-width: 1200px; margin: 0 auto; padding: 0 1.25rem;
-          height: 72px; display: flex; align-items: center; justify-content: space-between;
-        }
-
-        /* Logo */
-        .logo {
-          display: flex; align-items: center;
-          text-decoration: none; flex-shrink: 0;
-        }
-
-        .logo-img {
-          height: 56px;
-          width: auto;
-          object-fit: contain;
-          transition: opacity 0.2s;
-        }
-
-        /* En móvil invertir colores para que se vea sobre fondo oscuro */
-        @media (max-width: 767px) {
-          .header-bar.top .logo-img,
-          .header-bar.scrolled .logo-img {
-            filter: brightness(0) invert(1);
-          }
-        }
-
-        .logo:hover .logo-img { opacity: 0.85; }
-
-        /* Desktop nav */
-        .desktop-nav { display: none; }
-        @media (min-width: 768px) {
-          .desktop-nav { display: flex; align-items: center; gap: 2rem; }
-        }
-
-        .nav-link {
-          text-decoration: none; font-size: 17px; font-weight: 500;
-          color: #2d6a4f; padding: 6px 0; position: relative; transition: color 0.2s;
-        }
-        .nav-link::after {
-          content: ''; position: absolute; bottom: 0; left: 0;
-          width: 0; height: 2px; background: #52b788;
-          border-radius: 2px; transition: width 0.3s ease;
-        }
-        .nav-link:hover { color: #1a3d2b; }
-        .nav-link:hover::after { width: 100%; }
-
-        .cta-btn {
-          background: linear-gradient(135deg, #2d6a4f, #40916c);
-          color: white; border: none; padding: 11px 24px;
-          border-radius: 8px; font-size: 16px; font-weight: 600;
-          cursor: pointer; font-family: 'DM Sans', sans-serif;
-          transition: all 0.2s; box-shadow: 0 2px 8px rgba(45,106,79,0.3);
-          text-decoration: none; display: inline-block;
-        }
-        .cta-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(45,106,79,0.4); }
-
-        /* Hamburger */
-        .hamburger {
-          display: flex; align-items: center; justify-content: center;
-          width: 40px; height: 40px; border-radius: 10px;
-          border: none; cursor: pointer; transition: all 0.2s; background: transparent;
-        }
-        @media (min-width: 768px) { .hamburger { display: none; } }
-
-        .header-bar.top .hamburger { color: white; }
-        .header-bar.top .hamburger:hover { background: rgba(255,255,255,0.15); }
-        .header-bar.scrolled .hamburger { color: white; }
-        .header-bar.scrolled .hamburger:hover { background: rgba(255,255,255,0.1); }
-
-        /* Drawer overlay */
-        .drawer-overlay {
-          position: fixed; inset: 0; z-index: 100;
-          background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);
-          opacity: 0; pointer-events: none; transition: opacity 0.35s ease;
-        }
-        .drawer-overlay.open { opacity: 1; pointer-events: all; }
-
-        /* Drawer */
-        .drawer {
-          position: fixed; top: 0; right: 0; bottom: 0;
-          width: min(320px, 85vw); z-index: 101;
-          background: #0d2b1a;
-          transform: translateX(100%);
-          transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          display: flex; flex-direction: column; overflow: hidden;
-        }
-        .drawer.open { transform: translateX(0); }
-
-        .drawer::before {
-          content: ''; position: absolute; inset: 0;
-          background-image:
-            radial-gradient(circle at 20% 80%, rgba(82,183,136,0.12) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(45,106,79,0.15) 0%, transparent 50%);
-          pointer-events: none;
-        }
-
-        .drawer-header {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 1.25rem 1.5rem;
-          border-bottom: 1px solid rgba(82,183,136,0.15);
-          position: relative; z-index: 1;
-        }
-
-        .drawer-logo { display: flex; align-items: center; }
-
-        .drawer-logo-img {
-          height: 40px; width: auto; object-fit: contain;
-          filter: brightness(0) invert(1);
-        }
-
-        .drawer-close {
-          width: 36px; height: 36px; border-radius: 8px;
-          border: 1px solid rgba(82,183,136,0.25);
-          background: transparent; color: rgba(255,255,255,0.7);
-          display: flex; align-items: center; justify-content: center;
-          cursor: pointer; transition: all 0.2s;
-        }
-        .drawer-close:hover { background: rgba(82,183,136,0.15); color: white; }
-
-        .drawer-nav {
-          flex: 1; padding: 1.5rem 1.25rem;
-          display: flex; flex-direction: column; gap: 0.5rem;
-          position: relative; z-index: 1;
-        }
-
-        .drawer-nav-item {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 1rem 1.25rem; border-radius: 12px;
-          text-decoration: none; transition: all 0.2s;
-          border: 1px solid transparent;
-          animation: slideInRight 0.4s ease both;
-        }
-        .drawer-nav-item:hover {
-          background: rgba(82,183,136,0.1);
-          border-color: rgba(82,183,136,0.2);
-        }
-
-        .drawer-nav-label {
-          font-size: 17px; font-weight: 600; color: white;
-          font-family: 'Playfair Display', serif;
-        }
-        .drawer-nav-desc {
-          font-size: 11px; color: rgba(255,255,255,0.45);
-          margin-top: 2px; font-weight: 400;
-        }
-        .drawer-nav-arrow { color: rgba(82,183,136,0.6); transition: transform 0.2s; }
-        .drawer-nav-item:hover .drawer-nav-arrow { transform: translateX(4px); color: #52b788; }
-
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(20px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-        .drawer-nav-item:nth-child(1) { animation-delay: 0.05s; }
-        .drawer-nav-item:nth-child(2) { animation-delay: 0.1s; }
-        .drawer-nav-item:nth-child(3) { animation-delay: 0.15s; }
-        .drawer-nav-item:nth-child(4) { animation-delay: 0.2s; }
-
-        .drawer-footer {
-          padding: 1.25rem 1.5rem;
-          border-top: 1px solid rgba(82,183,136,0.15);
-          position: relative; z-index: 1;
-        }
-
-        .drawer-cta {
-          display: flex; align-items: center; justify-content: center; gap: 8px;
-          width: 100%; padding: 14px;
-          background: linear-gradient(135deg, #2d6a4f, #52b788);
-          border: none; border-radius: 12px; color: white;
-          font-size: 15px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif; cursor: pointer;
-          text-decoration: none; transition: all 0.2s;
-          box-shadow: 0 4px 16px rgba(45,106,79,0.4);
-        }
-        .drawer-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(45,106,79,0.5); }
-
-        .drawer-location {
-          display: flex; align-items: center; gap: 6px;
-          margin-top: 12px; justify-content: center;
-        }
-        .drawer-location span {
-          font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.5px;
-        }
-      `}</style>
-
-      <div className="header-root">
-        <header className={`header-bar ${isScrolled ? 'scrolled' : 'top'}`}>
-          <div className="header-inner">
-
-            {/* Logo */}
-            <a href="#inicio" className="logo">
-              <img
-                src="/Logo_Transporte.jpeg"
-                alt="Araucanía Viajes"
-                className="logo-img"
-              />
-            </a>
-
-            {/* Desktop nav */}
-            <nav className="desktop-nav">
-              {navLinks.map(({ href, label }) => (
-                <a key={href} href={href} className="nav-link">{label}</a>
-              ))}
-              <a href="#contacto" className="cta-btn">Reservar</a>
-            </nav>
-
-            {/* Hamburger */}
-            <button
-              className="hamburger"
-              onClick={() => setIsDrawerOpen(true)}
-              aria-label="Abrir menú"
-            >
-              <Menu size={22} />
-            </button>
-          </div>
-        </header>
-
-        {/* Overlay */}
-        <div
-          className={`drawer-overlay ${isDrawerOpen ? 'open' : ''}`}
-          onClick={() => setIsDrawerOpen(false)}
-        />
-
-        {/* Drawer */}
-        <div className={`drawer ${isDrawerOpen ? 'open' : ''}`}>
-          <div className="drawer-header">
-            <div className="drawer-logo">
-              <img
-                src="/Logo_Transporte.jpeg"
-                alt="Araucanía Viajes"
-                className="drawer-logo-img"
-              />
-            </div>
-            <button className="drawer-close" onClick={() => setIsDrawerOpen(false)}>
-              <X size={18} />
-            </button>
-          </div>
-
-          <nav className="drawer-nav">
-            {navLinks.map(({ href, label, desc }) => (
-              <a
-                key={href}
-                href={href}
-                className="drawer-nav-item"
-                onClick={() => setIsDrawerOpen(false)}
-              >
-                <div>
-                  <div className="drawer-nav-label">{label}</div>
-                  <div className="drawer-nav-desc">{desc}</div>
-                </div>
-                <ChevronRight size={16} className="drawer-nav-arrow" />
-              </a>
+          {/* Desktop nav */}
+          <nav className="hdr__nav" aria-label="Navegación principal">
+            {navLinks.map(({ href, label }) => (
+              <a key={href} href={href} className="hdr__nav-link">{label}</a>
             ))}
           </nav>
 
-          <div className="drawer-footer">
-            <a href="#contacto" className="drawer-cta" onClick={() => setIsDrawerOpen(false)}>
-              <MapPin size={16} />
-              Reservar mi viaje
-            </a>
-            <div className="drawer-location">
-              <MapPin size={11} color="rgba(255,255,255,0.4)" />
-              <span>Región de La Araucanía, Chile</span>
-            </div>
+          {/* Actions */}
+          <div className="hdr__actions">
+            {user ? (
+              /* Logged in */
+              <button className="hdr__user-pill">
+                <span>{user.name ?? 'Mi cuenta'}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+            ) : (
+              /* Guest */
+              <>
+                <a href="#login" className="hdr__signin">Inicia sesión</a>
+                <a href="#register" className="hdr__register">Regístrate</a>
+              </>
+            )}
+
+            {/* Hamburger — móvil only */}
+            <button
+              className="hdr__hamburger"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Abrir menú"
+              aria-expanded={drawerOpen}
+            >
+              <HamburgerIcon />
+            </button>
           </div>
         </div>
-      </div>
+      </header>
+
+      {/* ── DRAWER OVERLAY ── */}
+      <div
+        className={`drawer-overlay ${drawerOpen ? 'open' : ''}`}
+        onClick={() => setDrawerOpen(false)}
+        aria-hidden="true"
+      />
+
+      {/* ── DRAWER ── */}
+      <aside
+        className={`drawer ${drawerOpen ? 'open' : ''}`}
+        aria-label="Menú de navegación"
+        role="dialog"
+        aria-modal="true"
+      >
+        {/* Header del drawer */}
+        <div className="drawer__header">
+          <div className="drawer__logo">
+            <span className="drawer__logo-mark">LL</span>
+            <span className="drawer__logo-name">LLEVU</span>
+          </div>
+          <button
+            className="drawer__close"
+            onClick={() => setDrawerOpen(false)}
+            aria-label="Cerrar menú"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Si hay usuario */}
+        {user && (
+          <div className="drawer__user">
+            <div className="drawer__user-avatar">{(user.name ?? 'U')[0]}</div>
+            <div>
+              <div className="drawer__user-name">{user.name}</div>
+              <div className="drawer__user-email">{user.email ?? ''}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Nav items */}
+        <nav className="drawer__nav">
+          {drawerItems.map(({ href, label, desc }, i) => (
+            <a
+              key={href}
+              href={href}
+              className="drawer__item"
+              style={{ animationDelay: `${i * 0.06 + 0.04}s` }}
+              onClick={() => setDrawerOpen(false)}
+            >
+              <div>
+                <div className="drawer__item-label">{label}</div>
+                <div className="drawer__item-desc">{desc}</div>
+              </div>
+              <ChevronRight size={15} className="drawer__item-arrow" />
+            </a>
+          ))}
+        </nav>
+
+        {/* Footer */}
+        <div className="drawer__footer">
+          {!user ? (
+            <div className="drawer__auth-btns">
+              <a href="#login"    className="drawer__btn-ghost" onClick={() => setDrawerOpen(false)}>
+                <LogIn size={15}/> Inicia sesión
+              </a>
+              <a href="#register" className="drawer__btn-solid" onClick={() => setDrawerOpen(false)}>
+                <UserPlus size={15}/> Regístrate
+              </a>
+            </div>
+          ) : (
+            <button className="drawer__btn-ghost drawer__btn-ghost--full">
+              Cerrar sesión
+            </button>
+          )}
+          <div className="drawer__location">
+            <MapPin size={11} />
+            <span>Región de La Araucanía, Chile</span>
+          </div>
+        </div>
+      </aside>
     </>
   );
-};
+}
 
-export default Header;
+/* ── Hamburger SVG ────────────────────────────────────────────────────────── */
+const HamburgerIcon = () => (
+  <svg width="20" height="14" viewBox="0 0 20 14" fill="none" aria-hidden="true">
+    <rect x="0" y="0"  width="20" height="2" rx="1" fill="currentColor"/>
+    <rect x="4" y="6"  width="16" height="2" rx="1" fill="currentColor"/>
+    <rect x="2" y="12" width="18" height="2" rx="1" fill="currentColor"/>
+  </svg>
+);
+
+/* ── CSS ──────────────────────────────────────────────────────────────────── */
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap');
+
+  /* ── Reset ── */
+  .hdr *, .drawer *, .drawer-overlay { box-sizing: border-box; }
+
+  /* ═══════════════════════════════════════
+     HEADER BAR
+  ═══════════════════════════════════════ */
+  .hdr {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    background: #000;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.3s, background 0.3s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .hdr--scrolled {
+    border-bottom-color: #1a1a1a;
+    background: rgba(0,0,0,0.96);
+    backdrop-filter: blur(10px);
+  }
+
+  .hdr__inner {
+    max-width: 1100px; margin: 0 auto;
+    padding: 0 1.25rem;
+    height: 64px;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  }
+
+  /* ── Logo ── */
+  .hdr__logo {
+    display: flex; align-items: center; gap: 6px;
+    text-decoration: none; flex-shrink: 0;
+    transition: opacity .2s;
+  }
+  .hdr__logo:hover { opacity: .85; }
+
+  .hdr__logo-mark {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: #fff; color: #000;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 13px;
+    letter-spacing: -0.5px; flex-shrink: 0;
+  }
+  .hdr__logo-name {
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px;
+    color: #fff; letter-spacing: -0.5px; line-height: 1;
+  }
+
+  /* ── Desktop nav ── */
+  .hdr__nav {
+    display: none; align-items: center; gap: 0.25rem; flex: 1; margin-left: 2rem;
+  }
+  @media (min-width: 768px) { .hdr__nav { display: flex; } }
+
+  .hdr__nav-link {
+    padding: 6px 14px; border-radius: 8px;
+    text-decoration: none; font-size: 15px; font-weight: 500; color: #bbb;
+    transition: all .18s;
+  }
+  .hdr__nav-link:hover { color: #fff; background: #111; }
+
+  /* ── Actions ── */
+  .hdr__actions {
+    display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+  }
+
+  .hdr__signin {
+    padding: 8px 14px; border-radius: 8px;
+    text-decoration: none; font-size: 15px; font-weight: 500; color: #fff;
+    transition: background .18s; white-space: nowrap;
+  }
+  .hdr__signin:hover { background: #111; }
+
+  .hdr__register {
+    padding: 8px 16px; border-radius: 99px;
+    border: 1.5px solid #fff;
+    text-decoration: none; font-size: 15px; font-weight: 600; color: #fff;
+    transition: all .18s; white-space: nowrap;
+  }
+  .hdr__register:hover { background: #fff; color: #000; }
+
+  .hdr__user-pill {
+    display: flex; align-items: center; gap: 7px;
+    padding: 8px 16px; border-radius: 99px;
+    border: 1.5px solid #333; background: transparent;
+    font-size: 15px; font-weight: 600; color: #fff;
+    cursor: pointer; transition: all .18s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .hdr__user-pill:hover { border-color: #fff; background: #111; }
+
+  /* Hamburger — only mobile */
+  .hdr__hamburger {
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border-radius: 8px;
+    background: transparent; border: none; color: #fff;
+    cursor: pointer; transition: background .18s;
+    margin-left: 6px;
+  }
+  .hdr__hamburger:hover { background: #1a1a1a; }
+  @media (min-width: 768px) { .hdr__hamburger { display: none; } }
+
+  /* ═══════════════════════════════════════
+     OVERLAY
+  ═══════════════════════════════════════ */
+  .drawer-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s ease;
+  }
+  .drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+  /* ═══════════════════════════════════════
+     DRAWER
+  ═══════════════════════════════════════ */
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: min(300px, 82vw); z-index: 400;
+    background: #050505;
+    border-left: 1px solid #1a1a1a;
+    transform: translateX(100%);
+    transition: transform .38s cubic-bezier(.4,0,.2,1);
+    display: flex; flex-direction: column;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .drawer.open { transform: translateX(0); }
+
+  /* Decorative glow */
+  .drawer::after {
+    content: '';
+    position: absolute; top: -40px; left: -40px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Drawer header */
+  .drawer__header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.1rem 1.25rem;
+    border-bottom: 1px solid #141414;
+  }
+  .drawer__logo {
+    display: flex; align-items: center; gap: 6px; text-decoration: none;
+  }
+  .drawer__logo-mark {
+    width: 30px; height: 30px; border-radius: 7px;
+    background: #fff; color: #000;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 11px;
+  }
+  .drawer__logo-name {
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px;
+    color: #fff; letter-spacing: -0.3px;
+  }
+  .drawer__close {
+    width: 34px; height: 34px; border-radius: 8px;
+    border: 1px solid #222; background: transparent; color: #888;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all .2s;
+  }
+  .drawer__close:hover { border-color: #444; color: #fff; }
+
+  /* User badge */
+  .drawer__user {
+    display: flex; align-items: center; gap: 12px;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #141414;
+    background: #0a0a0a;
+  }
+  .drawer__user-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #fff; color: #000;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px;
+    flex-shrink: 0;
+  }
+  .drawer__user-name  { font-size: 15px; font-weight: 600; color: #fff; }
+  .drawer__user-email { font-size: 12px; color: #555; margin-top: 2px; }
+
+  /* Nav items */
+  .drawer__nav {
+    flex: 1; padding: 0.75rem 0.75rem;
+    display: flex; flex-direction: column; overflow-y: auto;
+  }
+  .drawer__item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.85rem 0.85rem; border-radius: 12px;
+    text-decoration: none; transition: background .18s;
+    opacity: 0;
+    animation: drawerSlide 0.35s ease both;
+  }
+  .drawer__item:hover { background: #111; }
+  .drawer__item:hover .drawer__item-arrow { transform: translateX(3px); color: #fff; }
+
+  .drawer__item-label { font-size: 16px; font-weight: 600; color: #fff; }
+  .drawer__item-desc  { font-size: 11px; color: #444; margin-top: 1px; }
+  .drawer__item-arrow { color: #333; transition: all .18s; flex-shrink: 0; }
+
+  @keyframes drawerSlide {
+    from { opacity: 0; transform: translateX(16px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Footer */
+  .drawer__footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid #141414;
+  }
+  .drawer__auth-btns {
+    display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;
+  }
+  .drawer__btn-ghost {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 13px;
+    background: transparent; border: 1.5px solid #222; border-radius: 10px;
+    color: #bbb; font-size: 14px; font-weight: 600;
+    font-family: 'DM Sans', sans-serif; cursor: pointer;
+    text-decoration: none; transition: all .2s;
+  }
+  .drawer__btn-ghost:hover { border-color: #555; color: #fff; }
+  .drawer__btn-ghost--full { width: 100%; }
+
+  .drawer__btn-solid {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 13px;
+    background: #fff; border: none; border-radius: 10px;
+    color: #000; font-size: 14px; font-weight: 700;
+    font-family: 'DM Sans', sans-serif; cursor: pointer;
+    text-decoration: none; transition: all .2s;
+  }
+  .drawer__btn-solid:hover { background: #e8e8e8; }
+
+  .drawer__location {
+    display: flex; align-items: center; gap: 5px;
+    justify-content: center; margin-top: 10px;
+    color: #333; font-size: 11px; letter-spacing: 0.3px;
+  }
+  .drawer__location span { color: #333; }
+`;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const supabase = createClient(
@@ -96,7 +96,7 @@ function LoginScreen({ onLogin }) {
 
 // ─── Auth Gate ────────────────────────────────────────────────
 function AuthGate({ children }) {
-  const [session, setSession] = useState(undefined); // undefined = cargando
+  const [session, setSession] = useState(undefined);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -105,7 +105,6 @@ function AuthGate({ children }) {
   }, []);
 
   if (session === undefined) {
-    // Cargando sesión inicial
     return (
       <div style={{ minHeight:"100vh", background:"#2d2820", display:"flex", alignItems:"center", justifyContent:"center" }}>
         <div style={{ width:36, height:36, border:"3px solid #D4CBB840", borderTopColor:"#EDE5D0", borderRadius:"50%", animation:"spin .7s linear infinite" }}/>
@@ -172,6 +171,7 @@ const css = `
   .rm-cards{display:flex;flex-direction:column;gap:14px}
   .rm-card{background:#fff;border-radius:16px;border:1.5px solid #D4CBB8;overflow:hidden;transition:box-shadow .2s}
   .rm-card:hover{box-shadow:0 4px 18px rgba(26,22,17,.1)}
+  .rm-card.cancelado-card{background:#fef9f9;border-color:#fca5a580}
   .rm-card-hd{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border-bottom:1px solid transparent;transition:border-color .2s}
   .rm-card.open .rm-card-hd{border-bottom-color:#EDE5D0}
   .rm-card-l{display:flex;align-items:center;gap:12px}
@@ -194,6 +194,12 @@ const css = `
   .rm-btn-cobrar{background:#2d2820;color:#EDE5D0;border:none;border-radius:9px;padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s;animation:pulse 2s infinite}
   .rm-btn-cobrar:hover{background:#3d3829;transform:translateY(-1px)}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(240,119,0,.35)}50%{box-shadow:0 0 0 7px rgba(240,119,0,0)}}
+
+  /* Botón eliminar viaje cancelado */
+  .rm-btn-eliminar{background:transparent;color:#dc2626;border:1.5px solid #fca5a5;border-radius:9px;padding:7px 13px;font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s;white-space:nowrap}
+  .rm-btn-eliminar:hover{background:#fef2f2;border-color:#dc2626;transform:translateY(-1px)}
+  .rm-btn-eliminar:active{transform:translateY(0)}
+
   .rm-chevron{color:#9a9080;font-size:.65rem;transition:transform .2s;margin-left:4px}
   .rm-card.open .rm-chevron{transform:rotate(180deg)}
 
@@ -213,7 +219,7 @@ const css = `
   .rm-btn.green:hover{background:#c6e6cc}
   .rm-btn.red{border-color:#fca5a5;color:#991b1b;background:#fef2f2}
   .rm-btn:disabled{opacity:.45;cursor:not-allowed}
-  .rm-detail-ft{display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #EDE5D0;align-items:center}
+  .rm-detail-ft{display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #EDE5D0;align-items:center;flex-wrap:wrap}
   .rm-detail-ft-info{flex:1;font-size:.78rem;color:#9a9080}
   .rm-btn-wa-lg{background:#22c55e;color:#fff;border:none;border-radius:9px;padding:9px 14px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s}
   .rm-btn-wa-lg:hover{background:#16a34a}
@@ -413,6 +419,31 @@ function ReservationManagerInner() {
     });
   };
 
+  // ── Eliminar viaje cancelado ──────────────────────────────
+  const eliminarViajeCancelado = (viaje) => {
+    setDialog({
+      titulo: "🗑️ Eliminar viaje cancelado",
+      mensaje: `¿Eliminar permanentemente el viaje ${viaje.ruta?.nombre} del ${fmtFecha(viaje.fecha)}? Se borrarán también todas sus reservas y pagos asociados. Esta acción no se puede deshacer.`,
+      danger: true,
+      onConfirm: async () => {
+        // Eliminar pagos → reservas → viaje (en orden por FK)
+        const reservaIds = (viaje.reservas || []).map(r => r.id);
+        if (reservaIds.length > 0) {
+          await supabase.from("pagos").delete().in("reserva_id", reservaIds);
+          await supabase.from("reservas").delete().in("id", reservaIds);
+        }
+        const { error } = await supabase.from("viajes").delete().eq("id", viaje.id);
+        if (!error) {
+          showToast("🗑️ Viaje eliminado");
+          setAbierto(null);
+        } else {
+          showToast("❌ Error al eliminar: " + error.message);
+        }
+        setDialog(null);
+      }
+    });
+  };
+
   // ── Crear viaje ───────────────────────────────────────────
   const validarViaje = () => {
     const e = {};
@@ -529,16 +560,19 @@ function ReservationManagerInner() {
                 const pct  = viaje.capacidad ? Math.min((conf/viaje.capacidad)*100,100) : 0;
                 const isOpen = abierto === viaje.id;
                 const ingresos = viaje.reservas?.flatMap(r=>r.pagos||[]).filter(p=>p.estado==="completado").reduce((s,p)=>s+p.monto,0)||0;
+                const isCancelado = viaje.estado === "cancelado";
 
                 return (
-                  <div key={viaje.id} className={`rm-card ${isOpen?"open":""}`}>
+                  <div key={viaje.id} className={`rm-card ${isOpen?"open":""} ${isCancelado?"cancelado-card":""}`}>
                     <div className="rm-card-hd" onClick={() => setAbierto(isOpen?null:viaje.id)}>
                       <div className="rm-card-l">
-                        <div className="rm-icon" style={{ background: viaje.tipo==="compartido"?"#EDE5D0":"#f0f0f0" }}>
+                        <div className="rm-icon" style={{ background: isCancelado ? "#fef2f2" : viaje.tipo==="compartido"?"#EDE5D0":"#f0f0f0", opacity: isCancelado ? 0.7 : 1 }}>
                           {viaje.tipo==="compartido"?"🚌":"🚐"}
                         </div>
                         <div>
-                          <div className="rm-ruta">{viaje.ruta?.nombre||"Ruta sin nombre"}</div>
+                          <div className="rm-ruta" style={{ opacity: isCancelado ? 0.6 : 1, textDecoration: isCancelado ? "line-through" : "none" }}>
+                            {viaje.ruta?.nombre||"Ruta sin nombre"}
+                          </div>
                           <div className="rm-meta">
                             {fmtFecha(viaje.fecha)} · {viaje.hora_salida?.slice(0,5)} · {fmtPeso(viaje.precio_por_pax)}/pax
                             {viaje.vehiculo ? ` · ${viaje.vehiculo}` : ""}
@@ -547,7 +581,7 @@ function ReservationManagerInner() {
                         </div>
                       </div>
                       <div className="rm-card-r">
-                        {viaje.tipo==="compartido" && (
+                        {viaje.tipo==="compartido" && !isCancelado && (
                           <div className="rm-prog">
                             <div className="rm-prog-lbl">{conf}/{viaje.capacidad} pax</div>
                             <div className="rm-prog-bar">
@@ -563,6 +597,16 @@ function ReservationManagerInner() {
                             💳 Enviar cobro
                           </button>
                         )}
+                        {/* ── BOTÓN ELIMINAR (solo viajes cancelados, en el header) ── */}
+                        {isCancelado && (
+                          <button
+                            className="rm-btn-eliminar"
+                            onClick={e => { e.stopPropagation(); eliminarViajeCancelado(viaje); }}
+                            title="Eliminar este viaje cancelado permanentemente"
+                          >
+                            🗑️ Eliminar
+                          </button>
+                        )}
                         <span className="rm-chevron">▼</span>
                       </div>
                     </div>
@@ -571,7 +615,12 @@ function ReservationManagerInner() {
                     {isOpen && (
                       <div className="rm-detail">
                         {(!viaje.reservas||viaje.reservas.length===0) ? (
-                          <div className="rm-empty" style={{padding:"20px 0"}}>Sin reservas aún. <button className="rm-btn" style={{marginLeft:8}} onClick={()=>{setFormRes(f=>({...f,viaje_id:viaje.id}));setTab("nueva-reserva")}}>+ Agregar</button></div>
+                          <div className="rm-empty" style={{padding:"20px 0"}}>
+                            Sin reservas.
+                            {!isCancelado && (
+                              <button className="rm-btn" style={{marginLeft:8}} onClick={()=>{setFormRes(f=>({...f,viaje_id:viaje.id}));setTab("nueva-reserva")}}>+ Agregar</button>
+                            )}
+                          </div>
                         ) : (
                           <table className="rm-table">
                             <thead><tr>
@@ -607,9 +656,9 @@ function ReservationManagerInner() {
                                     </td>
                                     <td>
                                       <div className="rm-act">
-                                        {r.estado==="pendiente"   && <button className="rm-btn" onClick={()=>confirmarPasajero(r.id)}>✓ Confirmar</button>}
-                                        {r.estado==="confirmada" && !pagado && <button className="rm-btn green" onClick={()=>marcarPagado(r.id,viaje.precio_por_pax*r.num_asientos)}>💳 Pago</button>}
-                                        {r.estado!=="cancelada"   && <button className="rm-btn red"   onClick={()=>cancelarPasajero(r.id,r.nombre)}>✕</button>}
+                                        {!isCancelado && r.estado==="pendiente"   && <button className="rm-btn" onClick={()=>confirmarPasajero(r.id)}>✓ Confirmar</button>}
+                                        {!isCancelado && r.estado==="confirmada" && !pagado && <button className="rm-btn green" onClick={()=>marcarPagado(r.id,viaje.precio_por_pax*r.num_asientos)}>💳 Pago</button>}
+                                        {!isCancelado && r.estado!=="cancelada"   && <button className="rm-btn red"   onClick={()=>cancelarPasajero(r.id,r.nombre)}>✕</button>}
                                         <button className="rm-btn" title="WhatsApp" onClick={()=>{
                                           const msg = encodeURIComponent(`Hola ${r.nombre.split(" ")[0]} 👋, te contactamos desde *Araucanía Viajes* por tu reserva ${viaje.ruta?.nombre} el ${fmtFecha(viaje.fecha)} a las ${viaje.hora_salida?.slice(0,5)}.`);
                                           window.open(`https://wa.me/${r.telefono.replace(/\D/g,"")}?text=${msg}`,"_blank");
@@ -630,10 +679,16 @@ function ReservationManagerInner() {
                           {viaje.estado==="listo_para_cobrar" && (
                             <button className="rm-btn-cobrar" onClick={()=>enviarCobro(viaje)}>💳 Enviar cobro</button>
                           )}
-                          {!["cancelado","completado"].includes(viaje.estado) && (
+                          {!isCancelado && (
                             <button className="rm-btn-ghost" style={{borderColor:"#fca5a5",color:"#991b1b"}} onClick={()=>cancelarViaje(viaje)}>🚫 Cancelar viaje</button>
                           )}
-                          <button className="rm-btn-wa-lg" onClick={()=>showToast("📨 Función de grupo próximamente")}>📢 Grupo</button>
+                          {/* Botón eliminar también dentro del detalle */}
+                          {isCancelado && (
+                            <button className="rm-btn-eliminar" onClick={()=>eliminarViajeCancelado(viaje)}>
+                              🗑️ Eliminar viaje permanentemente
+                            </button>
+                          )}
+                          {!isCancelado && <button className="rm-btn-wa-lg" onClick={()=>showToast("📨 Función de grupo próximamente")}>📢 Grupo</button>}
                           <button className="rm-btn-ghost" onClick={cargarViajes}>🔄</button>
                         </div>
                       </div>
@@ -665,7 +720,6 @@ function ReservationManagerInner() {
                   <div className="rm-form-title">🗓️ Programar nuevo viaje</div>
                   <div className="rm-form-sub">Completa los datos para agregar un viaje al sistema. Los campos con <span style={{color:"#dc2626"}}>*</span> son obligatorios.</div>
 
-                  {/* Sección 1: Ruta y tipo */}
                   <div className="rm-form-section">1. Ruta y tipo de transporte</div>
                   <div className="rm-grid">
                     <div className="rm-field rm-col2">
@@ -690,7 +744,6 @@ function ReservationManagerInner() {
                     </div>
                   </div>
 
-                  {/* Sección 2: Fecha y hora */}
                   <div className="rm-form-section">2. Fecha, hora y precio</div>
                   <div className="rm-grid-3">
                     <div className="rm-field">
@@ -710,7 +763,6 @@ function ReservationManagerInner() {
                     </div>
                   </div>
 
-                  {/* Sección 3: Conductor y vehículo */}
                   <div className="rm-form-section">3. Conductor y vehículo (opcional)</div>
                   <div className="rm-grid">
                     <div className="rm-field">
@@ -727,7 +779,6 @@ function ReservationManagerInner() {
                     </div>
                   </div>
 
-                  {/* Preview */}
                   {(rutaSel || formViaje.fecha) && (
                     <div className="rm-preview">
                       <div style={{fontSize:"1.5rem"}}>{formViaje.tipo==="compartido"?"🚌":"🚐"}</div>
@@ -829,7 +880,7 @@ function ReservationManagerInner() {
               <div className="rm-dlg-btns">
                 <button className="rm-btn-ghost" onClick={()=>setDialog(null)}>Cancelar</button>
                 <button className={dialog.danger?"rm-btn-danger":"rm-btn-confirm"} onClick={dialog.onConfirm}>
-                  {dialog.danger?"Sí, cancelar":"✓ Confirmar"}
+                  {dialog.danger?"Sí, eliminar":"✓ Confirmar"}
                 </button>
               </div>
             </div>

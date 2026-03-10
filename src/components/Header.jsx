@@ -18,7 +18,6 @@ export default function Header() {
     const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
     });
-    // Escuchar evento desde Reservas.jsx (botón "Ver mis reservas")
     const handleOpenMR = () => setMisReservas(true);
     document.addEventListener('openMisReservas', handleOpenMR);
 
@@ -74,9 +73,9 @@ export default function Header() {
       <header className={`hdr ${scrolled ? 'hdr--scrolled' : ''}`}>
         <div className="hdr__inner">
 
-          <a href="#inicio" className="hdr__logo" aria-label="LLEVU">
-            <span className="hdr__logo-mark">LL</span>
-            <span className="hdr__logo-name">LLEVU</span>
+          <a href="#inicio" className="hdr__logo" aria-label="TEMU">
+            <span className="hdr__logo-mark">T</span>
+            <span className="hdr__logo-name">TEMU</span>
           </a>
 
           <nav className="hdr__nav">
@@ -87,6 +86,7 @@ export default function Header() {
 
           <div className="hdr__actions">
             {user ? (
+              /* ── Usuario logueado: pill visible en todos los tamaños ── */
               <div style={{ position: 'relative' }}>
                 <button className="hdr__user-pill" onClick={() => setUserMenu(v => !v)}>
                   <span>{displayName}</span>
@@ -114,11 +114,14 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <>
+              /* ── Sin sesión: botones solo visibles en desktop ── */
+              <div className="hdr__auth-desktop">
                 <button className="hdr__signin"   onClick={() => openModal('login')}>Inicia sesión</button>
                 <button className="hdr__register" onClick={() => openModal('register')}>Regístrate</button>
-              </>
+              </div>
             )}
+
+            {/* Hamburger: siempre visible en móvil */}
             <button className="hdr__hamburger" onClick={() => setDrawerOpen(true)} aria-label="Abrir menú">
               <HamburgerIcon />
             </button>
@@ -131,8 +134,8 @@ export default function Header() {
       <aside className={`drawer ${drawerOpen ? 'open' : ''}`}>
         <div className="drawer__header">
           <div className="drawer__logo">
-            <span className="hdr__logo-mark" style={{ width: 30, height: 30, fontSize: 11 }}>LL</span>
-            <span className="drawer__logo-name">LLEVU</span>
+            <span className="hdr__logo-mark" style={{ width: 30, height: 30, fontSize: 11 }}>T</span>
+            <span className="drawer__logo-name">TEMU</span>
           </div>
           <button className="drawer__close" onClick={() => setDrawerOpen(false)}><X size={18}/></button>
         </div>
@@ -210,7 +213,7 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [name,     setName]     = useState('');
-  const [phone,    setPhone]    = useState('');   // ← NUEVO
+  const [phone,    setPhone]    = useState('');
   const [showPwd,  setShowPwd]  = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
@@ -230,16 +233,10 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
       } else {
         if (!name)  { setError('Ingresa tu nombre.');    setLoading(false); return; }
         if (!phone) { setError('Ingresa tu teléfono.');  setLoading(false); return; }
-
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            data: {
-              full_name: name,
-              phone:     phone,   // ← se guarda en user_metadata
-            },
-          },
+          options: { data: { full_name: name, phone } },
         });
         if (error) throw error;
         setSuccess('¡Cuenta creada! Revisa tu email para confirmar.');
@@ -261,8 +258,8 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
         <button className="modal-close" onClick={onClose} aria-label="Cerrar"><X size={18}/></button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1.5rem' }}>
-          <span className="hdr__logo-mark">LL</span>
-          <span className="hdr__logo-name" style={{ color: '#000' }}>LLEVU</span>
+          <span className="hdr__logo-mark">T</span>
+          <span className="hdr__logo-name" style={{ color: '#000' }}>TEMU</span>
         </div>
 
         <h2 className="modal-title">{isLogin ? 'Bienvenido de vuelta' : 'Crea tu cuenta'}</h2>
@@ -273,14 +270,11 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
         <div className="modal-fields">
           {!isLogin && (
             <>
-              {/* Nombre */}
               <div className="modal-field">
                 <label className="modal-label">Nombre completo</label>
                 <input className="modal-input" type="text" placeholder="Juan Pablo Pérez"
                   value={name} onChange={e => setName(e.target.value)} disabled={loading}/>
               </div>
-
-              {/* Teléfono ← NUEVO */}
               <div className="modal-field">
                 <label className="modal-label">Teléfono</label>
                 <div className="modal-phone-wrap">
@@ -290,11 +284,7 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
                     type="tel"
                     placeholder="9 1234 5678"
                     value={phone}
-                    onChange={e => {
-                      // Solo números y espacios
-                      const val = e.target.value.replace(/[^\d\s]/g, '');
-                      setPhone(val);
-                    }}
+                    onChange={e => setPhone(e.target.value.replace(/[^\d\s]/g, ''))}
                     disabled={loading}
                   />
                 </div>
@@ -302,7 +292,6 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
             </>
           )}
 
-          {/* Email */}
           <div className="modal-field">
             <label className="modal-label">Email</label>
             <input className="modal-input" type="email" placeholder="tu@email.com"
@@ -310,7 +299,6 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
               onKeyDown={e => e.key === 'Enter' && handleSubmit()} disabled={loading}/>
           </div>
 
-          {/* Contraseña */}
           <div className="modal-field">
             <label className="modal-label">Contraseña</label>
             <div className="modal-pwd-wrap">
@@ -375,6 +363,11 @@ const CSS = `
   .hdr__nav-link:hover{color:#fff;background:#111}
 
   .hdr__actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
+
+  /* Botones de auth: solo visibles en desktop */
+  .hdr__auth-desktop{display:none;align-items:center;gap:4px}
+  @media(min-width:768px){.hdr__auth-desktop{display:flex}}
+
   .hdr__signin{padding:8px 14px;border-radius:8px;border:none;background:transparent;font-size:15px;font-weight:500;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .18s;white-space:nowrap}
   .hdr__signin:hover{background:#111}
   .hdr__register{padding:8px 16px;border-radius:99px;border:1.5px solid #fff;background:transparent;font-size:15px;font-weight:600;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;white-space:nowrap}
@@ -390,6 +383,7 @@ const CSS = `
   .user-menu__item{display:flex;align-items:center;gap:8px;width:100%;padding:10px;border-radius:8px;border:none;background:transparent;color:#ccc;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s}
   .user-menu__item:hover{background:#1a1a1a;color:#fff}
 
+  /* Hamburger: visible en móvil, oculto en desktop */
   .hdr__hamburger{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:8px;background:transparent;border:none;color:#fff;cursor:pointer;transition:background .18s;margin-left:6px}
   .hdr__hamburger:hover{background:#1a1a1a}
   @media(min-width:768px){.hdr__hamburger{display:none}}
@@ -445,7 +439,6 @@ const CSS = `
   .modal-input::placeholder{color:#bbb}
   .modal-input:disabled{opacity:.5}
 
-  /* Teléfono con prefijo */
   .modal-phone-wrap{display:flex;align-items:center;border:1.5px solid #e5e5e5;border-radius:10px;background:#fafafa;overflow:hidden;transition:border-color .2s}
   .modal-phone-wrap:focus-within{border-color:#000;background:#fff}
   .modal-phone-prefix{padding:12px 10px 12px 14px;font-size:.93rem;font-weight:600;color:#555;border-right:1.5px solid #e5e5e5;white-space:nowrap;flex-shrink:0}

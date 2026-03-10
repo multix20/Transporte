@@ -1,4 +1,5 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -10,12 +11,12 @@ import Contact from './components/Contact';
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import Reservas from './components/Reservas';
+import ReservationManager from './components/ReservationManager';
 
-const App = () => (
+// ─── Landing page pública ─────────────────────────────────────
+const LandingPage = () => (
   <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-50">
-
     <Header />
-
     <main style={{ paddingTop: '64px' }}>
       <Reservas />
       <Hero />
@@ -26,10 +27,18 @@ const App = () => (
       <Contact />
       <Footer />
     </main>
-
     <WhatsAppButton />
-
   </div>
+);
+
+// ─── App con rutas ────────────────────────────────────────────
+const App = () => (
+  <BrowserRouter>
+    <Routes>
+      <Route path="/"      element={<LandingPage />} />
+      <Route path="/admin" element={<ReservationManager />} />
+    </Routes>
+  </BrowserRouter>
 );
 
 export default App;

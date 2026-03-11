@@ -123,23 +123,31 @@ const IcoCal = ({ size=15, c="#9a9080" }) => (
 );
 
 // ── Helpers Supabase ──────────────────────────────────────────────────────────
-async function obtenerOCrearViaje({ rutaKey, origenId, destinoId, fecha, tipo, precio_por_pax }) {
-  const rutaNombre = RUTA_NOMBRE[rutaKey];
+async function obtenerOCrearViaje({ rutaKey, origenId, destinoId, fecha, tipo, precio_por_pax, origenLabel, destinoLabel }) {
+  // Nombre de ruta: usa nombre fijo si existe, si no construye desde labels reales
+  const rutaNombre = RUTA_NOMBRE[rutaKey] || `${origenLabel || origenId} → ${destinoLabel || destinoId}`;
 
-  const { data: rutaData } = await supabase
+  // Buscar ruta existente por nombre exacto
+  const { data: rutaExistente } = await supabase
     .from("rutas")
     .select("id")
-    .ilike("nombre", `%${rutaNombre}%`)
+    .eq("nombre", rutaNombre)
     .maybeSingle();
 
-  let rutaId = rutaData?.id;
+  let rutaId = rutaExistente?.id;
+
+  // Crear ruta si no existe
   if (!rutaId) {
-    const origen  = ORIGENES.find(o => o.id === origenId);
-    const destino = DESTINOS_POR_ORIGEN[origenId]?.find(d => d.id === destinoId);
-    const { data: nuevaRuta } = await supabase
+    const { data: nuevaRuta, error: errRuta } = await supabase
       .from("rutas")
-      .insert({ nombre: rutaNombre, origen: origen?.label || "", destino: destino?.label || "", activa: true })
+      .insert({
+        nombre:  rutaNombre,
+        origen:  origenLabel  || "",
+        destino: destinoLabel || "",
+        activa:  true,
+      })
       .select("id").single();
+    if (errRuta) throw new Error("No se pudo crear la ruta");
     rutaId = nuevaRuta?.id;
   }
 
@@ -407,6 +415,8 @@ export default function Reservas() {
       const viajeId = await obtenerOCrearViaje({
         rutaKey, origenId, destinoId, fecha, tipo,
         precio_por_pax: precioPax,
+        origenLabel:  origen?.label  || "",
+        destinoLabel: destino?.label || "",
       });
 
       const { data, error: dbErr } = await supabase
@@ -944,12 +954,6 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled }) {
     setGeolocando(true);
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
-        // Si la precisión es muy baja (>500m) probablemente es geoloc por IP
-        if (coords.accuracy > 500) {
-          setGeolocando(false);
-          setQuery("Precisión insuficiente — escribe tu dirección");
-          return;
-        }
         try {
           const url = `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json&accept-language=es&zoom=18`;
           const res  = await fetch(url);

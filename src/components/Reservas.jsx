@@ -46,7 +46,7 @@ function useAddressHistory() {
   });
 
   const guardar = (lugar) => {
-    if (!lugar?.label || lugar.id) return; // No guardar puntos frecuentes fijos
+    if (!lugar?.label || lugar.id) return;
     setHistorial(prev => {
       const sin  = prev.filter(h => h.label.toLowerCase() !== lugar.label.toLowerCase());
       const nuevo = [{ ...lugar, count: 1, ts: Date.now() }, ...sin].slice(0, MAX_ADDR);
@@ -367,7 +367,6 @@ export default function Reservas() {
     setCalculando(true);
     setError("");
     try {
-      // Guardar en historial solo al calcular (no puntos fijos)
       guardar(origen);
       guardar(destino);
       const metros  = await obtenerDistancia(origen, destino);
@@ -503,16 +502,17 @@ export default function Reservas() {
           <div style={S.topBar}>
             <button className="btn-back" onClick={() => ir("tarifas")}><IcoChevron dir="left" c="#1a1611" size={20}/></button>
             <span style={S.topTitle}>Confirmar viaje</span>
-            <div style={{ width:36 }}/>
+            <div style={{ width:44 }}/>
           </div>
           <div style={S.rutaPill} className="fade-in">
             <div style={S.rutaDot}/>
-            <div style={{ flex:1 }}>
+            {/* ✅ FIX: minWidth:0 permite text-overflow:ellipsis dentro de flex */}
+            <div style={{ flex:1, minWidth:0 }}>
               <div style={S.rutaTexto}>{origen?.label}</div>
               <div style={S.rutaLinea}/>
               <div style={S.rutaTexto}>{destino?.label}</div>
             </div>
-            <div style={{ textAlign:"right" }}>
+            <div style={{ textAlign:"right", flexShrink:0 }}>
               <div style={S.pillMeta}>{fmt(fecha).split(",")[0]}</div>
               <div style={S.pillMeta}>{precio(montoTotal)}</div>
             </div>
@@ -541,16 +541,17 @@ export default function Reservas() {
           <div style={S.topBar}>
             <button className="btn-back" onClick={() => ir("tarifas")}><IcoChevron dir="left" c="#1a1611" size={20}/></button>
             <span style={S.topTitle}>Confirmar viaje</span>
-            <div style={{ width:36 }}/>
+            <div style={{ width:44 }}/>
           </div>
           <div style={S.rutaPill} className="fade-in">
             <div style={S.rutaDot}/>
-            <div style={{ flex:1 }}>
+            {/* ✅ FIX: minWidth:0 para que ellipsis funcione en flex */}
+            <div style={{ flex:1, minWidth:0 }}>
               <div style={S.rutaTexto}>{origen?.label}</div>
               <div style={S.rutaLinea}/>
               <div style={S.rutaTexto}>{destino?.label}</div>
             </div>
-            <div style={{ textAlign:"right" }}>
+            <div style={{ textAlign:"right", flexShrink:0 }}>
               <div style={S.pillMeta}>{rutaData?.km}</div>
               <div style={S.pillMeta}>{rutaData?.duracion}</div>
             </div>
@@ -632,16 +633,17 @@ export default function Reservas() {
         <div style={S.topBar}>
           <button className="btn-back" onClick={() => ir("inicio")}><IcoChevron dir="left" c="#1a1611" size={20}/></button>
           <span style={S.topTitle}>Elige tu viaje</span>
-          <div style={{ width:36 }}/>
+          <div style={{ width:44 }}/>
         </div>
         <div style={S.rutaPill} className="fade-in">
           <div style={S.rutaDot}/>
-          <div style={{ flex:1 }}>
+          {/* ✅ FIX: minWidth:0 para overflow correcto */}
+          <div style={{ flex:1, minWidth:0 }}>
             <div style={S.rutaTexto}>{origen?.label}</div>
             <div style={S.rutaLinea}/>
             <div style={S.rutaTexto}>{destino?.label}</div>
           </div>
-          <div style={{ textAlign:"right" }}>
+          <div style={{ textAlign:"right", flexShrink:0 }}>
             <div style={S.pillMeta}>{fmt(fecha).split(",")[0]}</div>
             <div style={S.pillMeta}>{pasajeros} pax · {rutaData?.km || "—"}</div>
           </div>
@@ -652,7 +654,7 @@ export default function Reservas() {
             onClick={() => setTipoViaje("compartido")}
           >
             <div style={S.tarifaIco}><IcoBus size={30} c={tipoViaje==="compartido"?"#1a1611":"#9a9080"}/></div>
-            <div style={{ flex:1, textAlign:"left" }}>
+            <div style={{ flex:1, textAlign:"left", minWidth:0 }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ fontWeight:700, fontSize:"1rem", color:"#1a1611" }}>Compartido</span>
                 <span style={S.badge}>Más económico</span>
@@ -661,7 +663,7 @@ export default function Reservas() {
                 {asientosLibres} asientos libres · {rutaData?.duracion || ""}
               </div>
             </div>
-            <div style={{ textAlign:"right" }}>
+            <div style={{ textAlign:"right", flexShrink:0 }}>
               <div style={{ fontWeight:800, fontSize:"1.25rem", color:"#1a1611" }}>
                 {rutaData ? precio(rutaData.persona * pasajeros) : "—"}
               </div>
@@ -677,7 +679,7 @@ export default function Reservas() {
             onClick={() => setTipoViaje("van_completa")}
           >
             <div style={S.tarifaIco}><IcoVan size={30} c={tipoViaje==="van_completa"?"#1a1611":"#9a9080"}/></div>
-            <div style={{ flex:1, textAlign:"left" }}>
+            <div style={{ flex:1, textAlign:"left", minWidth:0 }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ fontWeight:700, fontSize:"1rem", color:"#1a1611" }}>Van privada</span>
                 <span style={{ ...S.badge, background:"#3d2e1e" }}>Exclusiva</span>
@@ -686,7 +688,7 @@ export default function Reservas() {
                 Hasta {MAX_ASIENTOS} pax · {rutaData?.duracion || ""}
               </div>
             </div>
-            <div style={{ textAlign:"right" }}>
+            <div style={{ textAlign:"right", flexShrink:0 }}>
               <div style={{ fontWeight:800, fontSize:"1.25rem", color:"#1a1611" }}>
                 {rutaData ? precio(rutaData.van) : "—"}
               </div>
@@ -733,7 +735,7 @@ export default function Reservas() {
       <style>{css}</style>
       <div style={S.wrap}>
         <div style={S.saludoRow} className="fade-in">
-          <div style={{ flex:1 }}>
+          <div style={{ flex:1, minWidth:0 }}>
             <p style={S.saludoSub}>{usuario ? `Hola, ${usuario.nombre.split(" ")[0]} 👋` : "¿A dónde viajas?"}</p>
             <FrasesRotativas />
             <h2 style={S.saludoTitle}>¿A dónde<br/>vamos hoy?</h2>
@@ -800,7 +802,7 @@ export default function Reservas() {
             ].map((r,i) => (
               <button key={i} className="ruta-row" onClick={() => { setOrigen(r.o); setDestino(r.d); }}>
                 <div style={S.rutaIcoSmall}>{r.o.id==="aeropuerto"?"✈️":r.o.id==="pucon"?"🏔️":"🌋"}</div>
-                <div style={{ flex:1, textAlign:"left" }}>
+                <div style={{ flex:1, textAlign:"left", minWidth:0 }}>
                   <div style={{ fontWeight:600, fontSize:"0.88rem", color:"#1a1611" }}>{r.label}</div>
                   <div style={{ fontSize:"0.72rem", color:"#9a9080", marginTop:2 }}>{r.meta}</div>
                 </div>
@@ -865,17 +867,17 @@ function PaxPicker({ pasajeros, setPasajeros, max }) {
         <IcoPax size={13} c="#9a9080"/>
         <span style={{ fontSize:"0.72rem", color:"#9a9080", fontWeight:600, letterSpacing:"0.02em" }}>Pasajeros</span>
       </div>
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:2 }}>
-        <button className="cnt" onClick={() => setPasajeros(Math.max(1, pasajeros - 1))} style={{ width:26, height:26 }}>−</button>
+      <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:2 }}>
+        {/* ✅ FIX: touch target mínimo 44×44px — era 26×26px */}
+        <button className="cnt" onClick={() => setPasajeros(Math.max(1, pasajeros - 1))} style={{ width:44, height:44 }}>−</button>
         <span style={{ fontWeight:800, fontSize:"1rem", color:"#1a1611", minWidth:18, textAlign:"center" }}>{pasajeros}</span>
-        <button className="cnt" onClick={() => setPasajeros(Math.min(max, pasajeros + 1))} style={{ width:26, height:26 }}>+</button>
+        <button className="cnt" onClick={() => setPasajeros(Math.min(max, pasajeros + 1))} style={{ width:44, height:44 }}>+</button>
       </div>
     </div>
   );
 }
 
-// ── LugarInput — con historial de direcciones ─────────────────────────────────
-// Direcciones de ejemplo para el ticker animado
+// ── LugarInput ────────────────────────────────────────────────────────────────
 const EJEMPLOS_DIRECCIONES = [
   "Los Leones 01256, Temuco",
   "Av. Alemania 0480, Temuco",
@@ -887,7 +889,6 @@ const EJEMPLOS_DIRECCIONES = [
   "Lincoyan 542, Pucón",
 ];
 
-// Ticker de placeholder animado — letras entrando por la izquierda
 function PlaceholderTicker() {
   const [idx,    setIdx]    = useState(0);
   const [estado, setEstado] = useState("visible");
@@ -912,19 +913,11 @@ function PlaceholderTicker() {
   const opacities = { visible:1, saliendo:0, entrando:0 };
 
   return (
-    <span style={{
-      display: "block",
-      overflow: "hidden",
-      flex: 1,
-      pointerEvents: "none",
-    }}>
+    <span style={{ display:"block", overflow:"hidden", flex:1, pointerEvents:"none" }}>
       <span style={{
-        display: "block",
-        fontSize: "0.9rem",
-        color: "#B8AFA0",
-        fontFamily: "'DM Sans', sans-serif",
-        fontWeight: 400,
-        whiteSpace: "nowrap",
+        display:"block", fontSize:"0.9rem", color:"#B8AFA0",
+        fontFamily:"'DM Sans', sans-serif", fontWeight:400,
+        whiteSpace:"nowrap",
         transform: transforms[estado],
         opacity: opacities[estado],
         transition: estado === "saliendo"
@@ -932,7 +925,7 @@ function PlaceholderTicker() {
           : estado === "visible"
           ? "transform 0.38s cubic-bezier(.2,.8,.3,1), opacity 0.28s ease"
           : "none",
-        willChange: "transform, opacity",
+        willChange:"transform, opacity",
       }}>
         {EJEMPLOS_DIRECCIONES[idx]}
       </span>
@@ -947,20 +940,17 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled, historia
   const [resultados, setResultados] = useState([]);
   const [buscando,   setBuscando]   = useState(false);
   const [geolocando, setGeolocando] = useState(false);
-  // true cuando GPS falló → mostrar ticker de ejemplos
   const [geoFallback, setGeoFallback] = useState(false);
   const wrapRef  = useRef(null);
   const timerRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Geolocalización (manual o automática)
   const ubicarme = (silencioso = false) => {
     if (!navigator.geolocation) {
       if (!silencioso) alert("Tu navegador no soporta geolocalización.");
       setGeoFallback(true);
       return;
     }
-    // En http fuera de localhost, no intentar (fallará silenciosamente)
     if (location.protocol !== "https:" && location.hostname !== "localhost") {
       if (!silencioso) alert("La geolocalización precisa requiere conexión segura (https).");
       setGeoFallback(true);
@@ -988,16 +978,11 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled, historia
         }
         finally { setGeolocando(false); }
       },
-      () => {
-        // GPS denegado o falló → activar ticker
-        setGeolocando(false);
-        setGeoFallback(true);
-      },
+      () => { setGeolocando(false); setGeoFallback(true); },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
     );
   };
 
-  // Auto-GPS al montar (solo en campo origen)
   useEffect(() => {
     if (dotStyle === "origen" && !value) ubicarme(true);
   }, []);  // eslint-disable-line
@@ -1029,7 +1014,6 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled, historia
     p.sub.toLowerCase().includes(query.toLowerCase())
   );
 
-  // Filtrar historial: excluir puntos que ya aparecen como frecuentes fijos
   const histFiltrado = historial.filter(h =>
     !query || h.label.toLowerCase().includes(query.toLowerCase())
   );
@@ -1063,8 +1047,6 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled, historia
       }}>
         <div style={S.searchRow}>
           {dot}
-
-          {/* Wrapper relativo para superponer ticker sobre input vacío */}
           <div style={{ flex:1, position:"relative", display:"flex", alignItems:"center", overflow:"hidden" }}>
             <input
               ref={inputRef}
@@ -1083,7 +1065,6 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled, historia
                 caretColor: (!activo && !query) ? "transparent" : undefined,
               }}
             />
-            {/* Ticker: siempre que el campo esté vacío, sin foco, y sin GPS cargando */}
             {dotStyle === "origen" && !value && !query && !activo && !geolocando && (
               <div style={{
                 position:"absolute", left:0, right:0, top:0, bottom:0,
@@ -1093,7 +1074,6 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled, historia
                 <PlaceholderTicker/>
               </div>
             )}
-            {/* Spinner GPS — reemplaza el ticker mientras busca ubicación */}
             {dotStyle === "origen" && geolocando && !value && (
               <div style={{ position:"absolute", left:0, display:"flex", alignItems:"center", gap:6, pointerEvents:"none" }}>
                 <span className="btn-spinner" style={{ width:13, height:13, borderWidth:1.5, borderTopColor:"#9a9080", borderColor:"#D4CBB8" }}/>
@@ -1103,20 +1083,32 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled, historia
           </div>
 
           {buscando && <span className="btn-spinner" style={{ width:14, height:14, borderWidth:1.5, borderTopColor:"#9a9080", borderColor:"#D4CBB8", flexShrink:0 }}/>}
+
+          {/* ✅ FIX: botón × con área táctil 44×44px — era solo padding "2px 4px" */}
           {value && !buscando && (
             <button
               onMouseDown={e => { e.preventDefault(); onChange(null); setQuery(""); setResultados([]); }}
-              style={{ background:"none", border:"none", cursor:"pointer", padding:"2px 4px", color:"#C8BEA8", fontSize:"1.1rem", lineHeight:1, flexShrink:0 }}
+              style={{
+                background:"none", border:"none", cursor:"pointer",
+                width:44, height:44,                            // ✅ FIX
+                display:"flex", alignItems:"center", justifyContent:"center",
+                color:"#C8BEA8", fontSize:"1.1rem", lineHeight:1, flexShrink:0,
+              }}
             >×</button>
           )}
+
+          {/* ✅ FIX: botón GPS con área táctil 44×44px */}
           {dotStyle === "origen" && !value && !buscando && (
             <button
               onMouseDown={e => { e.preventDefault(); ubicarme(false); }}
               title="Usar mi ubicación actual"
               style={{
-                background:"none", border:"none", cursor: geolocando ? "wait" : "pointer",
-                padding:"4px 6px", color: geolocando ? "#C8BEA8" : "#9a9080",
-                display:"flex", alignItems:"center", transition:"color .2s", flexShrink:0,
+                background:"none", border:"none",
+                cursor: geolocando ? "wait" : "pointer",
+                width:44, height:44,                            // ✅ FIX
+                display:"flex", alignItems:"center", justifyContent:"center",
+                color: geolocando ? "#C8BEA8" : "#9a9080",
+                transition:"color .2s", flexShrink:0,
               }}
             >
               {geolocando
@@ -1134,8 +1126,6 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled, historia
 
       {mostrarDropdown && (
         <div style={S.dropdown}>
-
-          {/* GPS */}
           {dotStyle === "origen" && !value && (
             <button className="drop-item" onMouseDown={e => { e.preventDefault(); ubicarme(); setAbierto(false); }}
               style={{ borderBottom:"1px solid #F0EBE0" }}>
@@ -1149,7 +1139,6 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled, historia
             </button>
           )}
 
-          {/* Historial de direcciones usadas */}
           {histFiltrado.length > 0 && (
             <>
               <div style={S.dropHeader}>Usadas recientemente</div>
@@ -1157,18 +1146,20 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled, historia
                 <div key={i} style={{ display:"flex", alignItems:"center" }}>
                   <button className="drop-item" style={{ flex:1 }} onMouseDown={() => seleccionar(h)}>
                     <div style={{ ...S.dropIcon, background:"#F0EBE0" }}>🕐</div>
-                    <div style={{ flex:1, textAlign:"left" }}>
-                      <div style={{ fontSize:"0.85rem", fontWeight:600, color:"#1a1611" }}>{h.label}</div>
+                    <div style={{ flex:1, textAlign:"left", minWidth:0 }}>
+                      <div style={{ fontSize:"0.85rem", fontWeight:600, color:"#1a1611", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{h.label}</div>
                       {h.sub && <div style={{ fontSize:"0.72rem", color:"#9a9080", marginTop:1 }}>{h.sub}</div>}
                     </div>
                   </button>
+                  {/* ✅ FIX: botón eliminar historial con área táctil 44×44px */}
                   <button
                     onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onEliminarHistorial?.(h.label); }}
                     title="Eliminar del historial"
                     style={{
                       background:"none", border:"none", cursor:"pointer",
-                      padding:"8px 14px 8px 4px", color:"#C8BEA8",
-                      fontSize:"1rem", flexShrink:0, lineHeight:1,
+                      width:44, height:44,                        // ✅ FIX
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      color:"#C8BEA8", fontSize:"1rem", flexShrink:0,
                     }}
                   >×</button>
                 </div>
@@ -1176,15 +1167,14 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled, historia
             </>
           )}
 
-          {/* Puntos frecuentes fijos */}
           {frecuentes.length > 0 && (
             <>
               <div style={S.dropHeader}>Rutas frecuentes</div>
               {frecuentes.map(p => (
                 <button key={p.id} className="drop-item" onMouseDown={() => seleccionar(p)}>
                   <div style={S.dropIcon}>{p.label.slice(0,2)}</div>
-                  <div style={{ flex:1, textAlign:"left" }}>
-                    <div style={{ fontSize:"0.85rem", fontWeight:600, color:"#1a1611" }}>{p.label.replace(/^[^\w\s]{1,3}\s*/,"")}</div>
+                  <div style={{ flex:1, textAlign:"left", minWidth:0 }}>
+                    <div style={{ fontSize:"0.85rem", fontWeight:600, color:"#1a1611", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.label.replace(/^[^\w\s]{1,3}\s*/,"")}</div>
                     <div style={{ fontSize:"0.72rem", color:"#9a9080", marginTop:1 }}>{p.sub}</div>
                   </div>
                 </button>
@@ -1192,15 +1182,14 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled, historia
             </>
           )}
 
-          {/* Resultados Nominatim */}
           {resultados.length > 0 && (
             <>
               <div style={S.dropHeader}>Resultados</div>
               {resultados.map((r, i) => (
                 <button key={i} className="drop-item" onMouseDown={() => seleccionar(r)}>
                   <div style={{ ...S.dropIcon, fontSize:"0.9rem" }}>📍</div>
-                  <div style={{ flex:1, textAlign:"left" }}>
-                    <div style={{ fontSize:"0.85rem", fontWeight:600, color:"#1a1611" }}>{r.label}</div>
+                  <div style={{ flex:1, textAlign:"left", minWidth:0 }}>
+                    <div style={{ fontSize:"0.85rem", fontWeight:600, color:"#1a1611", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.label}</div>
                     {r.sub && <div style={{ fontSize:"0.72rem", color:"#9a9080", marginTop:1 }}>{r.sub}</div>}
                   </div>
                 </button>
@@ -1301,19 +1290,29 @@ const css = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700;800&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
   input, select, textarea { font-size: 16px !important; }
+
+  /* ✅ FIX: evitar scroll horizontal global */
+  html, body { overflow-x: hidden; max-width: 100%; }
+
   @media (max-width: 380px) {
     .btn-confirmar { font-size: 0.85rem !important; padding: 13px !important; }
     .btn-flow      { font-size: 0.85rem !important; padding: 13px !important; }
     .tarifa-card   { padding: 0.85rem 0.9rem !important; gap: 10px !important; }
     .ruta-row      { padding: 11px 4px !important; }
     .pago-opt      { padding: 0.75rem 0.8rem !important; }
+    /* ✅ FIX 375px: reducir gap del PaxPicker para que quepa */
+    .cnt           { width: 40px !important; height: 40px !important; }
   }
+
   @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   .fade-in { animation: fadeIn 0.3s ease both; }
   select { appearance: none; -webkit-appearance: none; }
   select option { background: #EDE5D0; color: #1a1611; }
-  .btn-back { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid #D4CBB8; background: #EDE5D0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .15s; }
+
+  /* ✅ FIX: btn-back era 36×36px, ahora 44×44px (mínimo táctil) */
+  .btn-back { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid #D4CBB8; background: #EDE5D0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .15s; }
   .btn-back:hover { background: #D4CBB8; }
+
   .btn-confirmar { width: 100%; padding: clamp(14px, 4vw, 17px); background: #1a1611; color: #F5EDD8; border: none; border-radius: 14px; font-size: clamp(0.9rem, 4vw, 1rem); font-weight: 800; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .2s; box-shadow: 0 4px 20px rgba(26,22,17,.2); letter-spacing: -0.01em; }
   .btn-confirmar:hover:not(:disabled) { background: #2d2820; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(26,22,17,.28); }
   .btn-confirmar:disabled { background: #D4CBB8; color: #9a9080; cursor: not-allowed; box-shadow: none; }
@@ -1321,8 +1320,11 @@ const css = `
   .btn-wa:hover { background: #16a34a; }
   .btn-ghost { width: 100%; padding: 14px; background: transparent; color: #9a9080; border: 1.5px solid #D4CBB8; border-radius: 14px; font-size: 0.88rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .2s; }
   .btn-ghost:hover { border-color: #9a9080; color: #3d3629; }
+
+  /* ✅ FIX: .cnt era 26×26px — ahora mínimo 44×44px táctil */
   .cnt { border-radius: 50%; border: 1.5px solid #C8BEA8; background: transparent; color: #1a1611; font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; font-family: inherit; }
   .cnt:hover { background: #D4CBB8; }
+
   .tarifa-card { display: flex; align-items: center; gap: 14px; padding: 1.1rem 1.15rem; border-radius: 16px; border: 1.5px solid #D4CBB8; background: #EDE5D0; cursor: pointer; transition: all .2s; font-family: 'DM Sans', sans-serif; text-align: left; width: 100%; }
   .tarifa-card:hover { border-color: #9a9080; background: #E8E0D0; }
   .tarifa-on { border-color: #1a1611 !important; background: #F5EDD8 !important; box-shadow: 0 0 0 2px #1a1611; }
@@ -1339,26 +1341,27 @@ const css = `
   .btn-mis-reservas { width: 100%; padding: 13px; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; background: transparent; color: #1a1611; border: 1.5px solid #1a1611; border-radius: 14px; font-size: 0.88rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .2s; }
   .btn-mis-reservas:hover { background: #1a1611; color: #fff; }
   .btn-spinner { width: 17px; height: 17px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; animation: spin .7s linear infinite; display: inline-block; flex-shrink: 0; }
-  .drop-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 16px; background: transparent; border: none; cursor: pointer; transition: background .15s; font-family: 'DM Sans', sans-serif; }
+  .drop-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 16px; background: transparent; border: none; cursor: pointer; transition: background .15s; font-family: 'DM Sans', sans-serif; min-height: 44px; /* ✅ FIX: touch target mínimo */ }
   .drop-item:hover { background: #FAF7F2; }
   .drop-item:last-of-type { margin-bottom: 4px; }
 `;
 
 const S = {
-  root:        { background:"#ffffff", minHeight:"100vh", fontFamily:"'DM Sans', sans-serif" },
+  root:        { background:"#ffffff", minHeight:"100vh", fontFamily:"'DM Sans', sans-serif", overflowX:"hidden" /* ✅ FIX */ },
   wrap:        { maxWidth:480, width:"100%", margin:"0 auto", padding:"0 clamp(14px,4vw,24px) 80px", boxSizing:"border-box" },
   saludoRow:   { display:"flex", justifyContent:"space-between", alignItems:"flex-start", paddingTop:"clamp(1.25rem,5vw,2.5rem)", paddingBottom:"1.25rem" },
   saludoSub:   { fontSize:"0.85rem", color:"#9a9080", marginBottom:4, fontWeight:500 },
   saludoTitle: { fontFamily:"'Syne', sans-serif", fontSize:"clamp(1.5rem,6vw,2.2rem)", fontWeight:800, color:"#1a1611", lineHeight:1.12 },
   searchBoxSingle: { background:"#EDE5D0", border:"1px solid #D4CBB8", borderRadius:16, boxShadow:"0 2px 12px rgba(26,22,17,.06)", transition:"border-color .2s, box-shadow .2s" },
   arrowSep:    { display:"flex", alignItems:"center", justifyContent:"center", height:22, position:"relative" },
-  swapBtn:     { width:30, height:30, borderRadius:"50%", background:"#fff", border:"1.5px solid #D4CBB8", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"#9a9080", transition:"all .2s", boxShadow:"0 1px 6px rgba(26,22,17,.08)", zIndex:1 },
+  // ✅ FIX: swapBtn era 30×30px, ahora 44×44px touch target
+  swapBtn:     { width:44, height:44, borderRadius:"50%", background:"#fff", border:"1.5px solid #D4CBB8", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"#9a9080", transition:"all .2s", boxShadow:"0 1px 6px rgba(26,22,17,.08)", zIndex:1 },
   distBadge:   { display:"flex", alignItems:"center", gap:6, background:"#F0EBE0", border:"1px solid #D4CBB8", borderRadius:99, padding:"5px 14px", fontSize:"0.75rem", fontWeight:600, color:"#6b5e4e", marginTop:8, alignSelf:"flex-start" },
-  dropdown:    { position:"absolute", top:"calc(100% + 6px)", left:0, right:0, background:"#fff", border:"1px solid #E0D8CC", borderRadius:14, boxShadow:"0 8px 32px rgba(26,22,17,.14)", zIndex:9999, overflow:"visible" },
+  dropdown:    { position:"absolute", top:"calc(100% + 6px)", left:0, right:0, background:"#fff", border:"1px solid #E0D8CC", borderRadius:14, boxShadow:"0 8px 32px rgba(26,22,17,.14)", zIndex:9999, overflow:"hidden" /* ✅ FIX: era "visible", causaba desborde */ },
   dropHeader:  { padding:"8px 16px 4px", fontSize:"0.67rem", fontWeight:700, color:"#C8BEA8", textTransform:"uppercase", letterSpacing:"0.07em" },
   dropIcon:    { width:34, height:34, borderRadius:10, background:"#F0EBE0", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1rem", flexShrink:0 },
   dropAviso:   { display:"flex", alignItems:"flex-start", gap:8, padding:"10px 16px", margin:"4px 8px 8px", background:"#FDF9F3", border:"1px solid #E8E0D0", borderRadius:10, fontSize:"0.72rem", color:"#9a9080", lineHeight:1.5 },
-  searchRow:   { display:"flex", alignItems:"center", gap:14, padding:"15px 18px" },
+  searchRow:   { display:"flex", alignItems:"center", gap:10, padding:"10px 14px" /* ✅ FIX: reducido para acomodar botones 44px */ },
   select:      { flex:1, background:"transparent", border:"none", outline:"none", fontSize:"0.95rem", fontFamily:"'DM Sans', sans-serif", cursor:"pointer", fontWeight:500 },
   dotOrigen:   { width:10, height:10, borderRadius:"50%", border:"2.5px solid #1a1611", flexShrink:0 },
   dotDestino:  { width:10, height:10, borderRadius:2, background:"#1a1611", flexShrink:0 },
@@ -1366,13 +1369,14 @@ const S = {
   rutaIcoSmall:{ width:38, height:38, borderRadius:10, background:"#E8E0D0", border:"1px solid #D4CBB8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.1rem", flexShrink:0 },
   topBar:      { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"1.5rem 0 1rem" },
   topTitle:    { fontFamily:"'Syne', sans-serif", fontSize:"clamp(0.9rem,4vw,1.05rem)", fontWeight:800, color:"#1a1611" },
-  rutaPill:    { background:"#EDE5D0", border:"1px solid #D4CBB8", borderRadius:16, padding:"14px 16px", display:"flex", alignItems:"center", gap:14, marginBottom:16, boxShadow:"0 2px 12px rgba(26,22,17,.06)" },
+  rutaPill:    { background:"#EDE5D0", border:"1px solid #D4CBB8", borderRadius:16, padding:"14px 16px", display:"flex", alignItems:"center", gap:12, marginBottom:16, boxShadow:"0 2px 12px rgba(26,22,17,.06)", overflow:"hidden" /* ✅ FIX */ },
   rutaDot:     { display:"flex", flexDirection:"column", alignItems:"center", gap:2, flexShrink:0 },
-  rutaTexto:   { fontSize:"0.88rem", fontWeight:700, color:"#1a1611" },
+  // ✅ FIX: overflow + ellipsis para textos largos de origen/destino
+  rutaTexto:   { fontSize:"0.88rem", fontWeight:700, color:"#1a1611", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" },
   rutaLinea:   { height:14, width:1, background:"#D4CBB8", margin:"4px 0" },
-  pillMeta:    { fontSize:"0.72rem", color:"#9a9080", lineHeight:1.8 },
+  pillMeta:    { fontSize:"0.72rem", color:"#9a9080", lineHeight:1.8, whiteSpace:"nowrap" },
   tarifaIco:   { width:52, height:52, borderRadius:14, background:"#E8E0D0", border:"1px solid #D4CBB8", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
-  badge:       { fontSize:"0.65rem", background:"#1a1611", color:"#F5EDD8", padding:"2px 8px", borderRadius:99, fontWeight:700 },
+  badge:       { fontSize:"0.65rem", background:"#1a1611", color:"#F5EDD8", padding:"2px 8px", borderRadius:99, fontWeight:700, whiteSpace:"nowrap" /* ✅ FIX */ },
   section:     { padding:"0.5rem 0 1rem", borderBottom:"1px solid #E8E0D0", marginBottom:"1rem" },
   sectionLabel:{ fontSize:"0.72rem", fontWeight:700, color:"#9a9080", letterSpacing:"0.06em", marginBottom:"0.6rem" },
   aviso:       { display:"flex", gap:10, background:"rgba(245,193,7,0.1)", border:"1px solid rgba(245,193,7,0.3)", borderRadius:12, padding:"0.9rem", marginBottom:"1rem" },

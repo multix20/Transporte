@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, MapPin, Calendar, Clock, Users, Hash, Plane, Trash2 } from 'lucide-react';
+import { X, MapPin, Calendar, Clock, Users, Hash, Trash2 } from 'lucide-react';
 import supabase from '../lib/supabase';
 
 const ESTADO_STYLES = {
@@ -9,12 +9,12 @@ const ESTADO_STYLES = {
 };
 
 export default function MisReservas({ onClose }) {
-  const [reservas,    setReservas]    = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState('');
-  const [userEmail,   setUserEmail]   = useState('');
-  const [confirmId,   setConfirmId]   = useState(null);
-  const [deleting,    setDeleting]    = useState(null);
+  const [reservas,  setReservas]  = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [confirmId, setConfirmId] = useState(null);
+  const [deleting,  setDeleting]  = useState(null);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -30,7 +30,6 @@ export default function MisReservas({ onClose }) {
         const email = session.user.email;
         setUserEmail(email);
 
-        // JOIN: reservas → viajes → rutas para obtener fecha, ruta y tipo
         const { data, error: err } = await supabase
           .from('reservas')
           .select(`
@@ -51,6 +50,8 @@ export default function MisReservas({ onClose }) {
             )
           `)
           .eq('email', email)
+          // ✅ FIX: excluir canceladas — el usuario no necesita verlas
+          .neq('estado', 'cancelada')
           .order('created_at', { ascending: false });
 
         if (err) throw err;
@@ -64,15 +65,23 @@ export default function MisReservas({ onClose }) {
     fetchReservas();
   }, []);
 
+  // ✅ FIX: UPDATE estado='cancelada' en vez de DELETE físico
+  // Así el admin mantiene el registro y el realtime propaga correctamente
   const handleDelete = async (id) => {
     if (confirmId !== id) { setConfirmId(id); return; }
     setDeleting(id);
     try {
-      const { error: err } = await supabase.from('reservas').delete().eq('id', id);
+      const { error: err } = await supabase
+        .from('reservas')
+        .update({ estado: 'cancelada' })   // ← era: .delete()
+        .eq('id', id);
+
       if (err) throw err;
+
+      // Quitar de la vista local (el usuario no ve canceladas)
       setReservas(prev => prev.filter(r => r.id !== id));
     } catch {
-      setError('No se pudo eliminar la reserva.');
+      setError('No se pudo cancelar la reserva.');
     } finally {
       setDeleting(null);
       setConfirmId(null);
@@ -128,26 +137,24 @@ export default function MisReservas({ onClose }) {
           )}
 
           {!loading && reservas.map((r) => {
-            const st     = ESTADO_STYLES[r.estado] ?? ESTADO_STYLES.pendiente;
-            const viaje  = r.viajes;
-            const ruta   = viaje?.rutas;
+            const st         = ESTADO_STYLES[r.estado] ?? ESTADO_STYLES.pendiente;
+            const viaje      = r.viajes;
+            const ruta       = viaje?.rutas;
             const rutaNombre = ruta?.nombre || `${ruta?.origen || ''} → ${ruta?.destino || ''}` || '—';
-            const tipo   = viaje?.tipo === 'compartido' ? 'Compartido' : 'Van privada';
+            const tipo       = viaje?.tipo === 'compartido' ? 'Compartido' : 'Van privada';
 
             return (
               <div key={r.id} className="mr-card">
-                {/* Estado badge */}
+
                 <span className="mr-badge" style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>
                   {st.label}
                 </span>
 
-                {/* Ruta */}
                 <div className="mr-ruta">
                   <MapPin size={14} className="mr-icon" />
                   <span>{rutaNombre}</span>
                 </div>
 
-                {/* Grid de datos */}
                 <div className="mr-grid">
                   <div className="mr-data">
                     <Calendar size={13} className="mr-data-icon" />
@@ -169,27 +176,25 @@ export default function MisReservas({ onClose }) {
                   </div>
                 </div>
 
-                {/* Tipo de viaje */}
                 <div className="mr-tipo">
                   {viaje?.tipo === 'compartido' ? '🚌' : '🚐'} {tipo}
                 </div>
 
-                {/* Notas */}
                 {r.notas && <p className="mr-notas">"{r.notas}"</p>}
 
-                {/* Botón eliminar */}
                 <div className="mr-card-footer">
                   {confirmId === r.id ? (
                     <div className="mr-confirm">
-                      <span>¿Eliminar esta reserva?</span>
+                      <span>¿Cancelar esta reserva?</span>
                       <button className="mr-btn-cancel-confirm" onClick={() => setConfirmId(null)}>No</button>
                       <button className="mr-btn-delete-confirm" onClick={() => handleDelete(r.id)} disabled={deleting === r.id}>
-                        {deleting === r.id ? <span className="mr-spinner-sm"/> : 'Sí, eliminar'}
+                        {deleting === r.id ? <span className="mr-spinner-sm"/> : 'Sí, cancelar'}
                       </button>
                     </div>
                   ) : (
+                    // ✅ FIX: texto actualizado a "Cancelar" — refleja la acción real
                     <button className="mr-btn-delete" onClick={() => handleDelete(r.id)}>
-                      <Trash2 size={13}/> Eliminar
+                      <Trash2 size={13}/> Cancelar reserva
                     </button>
                   )}
                 </div>

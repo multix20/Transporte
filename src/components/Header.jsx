@@ -3,13 +3,69 @@ import { ChevronRight, MapPin, LogIn, UserPlus, X, Eye, EyeOff, LogOut } from 'l
 import supabase from '../lib/supabase';
 import MisReservas from './MisReservas';
 
+// ── Logo animado TEMU → TEMUEVO ───────────────────────────────────────────────
+function LogoAnimado({ size = "hdr" }) {
+  const [fase, setFase] = useState("solo"); // "solo" | "entrando" | "completo" | "saliendo"
+
+  useEffect(() => {
+    let t;
+    const ciclo = () => {
+      t = setTimeout(() => {
+        setFase("entrando");
+        t = setTimeout(() => {
+          setFase("completo");
+          t = setTimeout(() => {
+            setFase("saliendo");
+            t = setTimeout(() => {
+              setFase("solo");
+              ciclo();
+            }, 350);
+          }, 1800);
+        }, 400);
+      }, 2200);
+    };
+    ciclo();
+    return () => clearTimeout(t);
+  }, []);
+
+  const isHdr    = size === "hdr";
+  const fontSize = isHdr ? 20 : 17;
+  const markSize = isHdr ? 34 : 30;
+  const markFont = isHdr ? 13 : 11;
+
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+      <span className="hdr__logo-mark" style={{ width:markSize, height:markSize, fontSize:markFont }}>T</span>
+      <span style={{
+        display:"flex", alignItems:"center",
+        fontFamily:"'Syne', sans-serif", fontWeight:800, fontSize,
+        color:"#fff", letterSpacing:"-0.5px", lineHeight:1, overflow:"hidden",
+      }}>
+        <span>TEMU</span>
+        <span style={{
+          display:"inline-block",
+          transform: (fase === "solo" || fase === "saliendo") ? "translateX(60px)" : "translateX(0)",
+          opacity:   (fase === "solo" || fase === "saliendo") ? 0 : 1,
+          transition: fase === "entrando"
+            ? "transform 0.38s cubic-bezier(.2,.8,.3,1), opacity 0.28s ease"
+            : fase === "saliendo"
+            ? "transform 0.3s cubic-bezier(.4,0,1,1), opacity 0.22s ease"
+            : "none",
+          color:"#c8f000",
+          willChange:"transform, opacity",
+        }}>EVO</span>
+      </span>
+    </div>
+  );
+}
+
 export default function Header() {
   const [drawerOpen, setDrawerOpen]   = useState(false);
   const [scrolled,   setScrolled]     = useState(false);
   const [modal,      setModal]        = useState(null);
   const [user,       setUser]         = useState(null);
   const [userMenu,   setUserMenu]     = useState(false);
-  const [misReservas, setMisReservas]  = useState(false);
+  const [misReservas, setMisReservas] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -20,7 +76,6 @@ export default function Header() {
     });
     const handleOpenMR = () => setMisReservas(true);
     document.addEventListener('openMisReservas', handleOpenMR);
-
     return () => {
       listener.subscription.unsubscribe();
       document.removeEventListener('openMisReservas', handleOpenMR);
@@ -73,9 +128,8 @@ export default function Header() {
       <header className={`hdr ${scrolled ? 'hdr--scrolled' : ''}`}>
         <div className="hdr__inner">
 
-          <a href="#inicio" className="hdr__logo" aria-label="TEMU">
-            <span className="hdr__logo-mark">T</span>
-            <span className="hdr__logo-name">TEMU</span>
+          <a href="#inicio" className="hdr__logo" aria-label="TEMUEVO">
+            <LogoAnimado size="hdr" />
           </a>
 
           <nav className="hdr__nav">
@@ -86,7 +140,6 @@ export default function Header() {
 
           <div className="hdr__actions">
             {user ? (
-              /* ── Usuario logueado: pill visible en todos los tamaños ── */
               <div style={{ position: 'relative' }}>
                 <button className="hdr__user-pill" onClick={() => setUserMenu(v => !v)}>
                   <span>{displayName}</span>
@@ -114,14 +167,12 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              /* ── Sin sesión: botones solo visibles en desktop ── */
               <div className="hdr__auth-desktop">
                 <button className="hdr__signin"   onClick={() => openModal('login')}>Inicia sesión</button>
                 <button className="hdr__register" onClick={() => openModal('register')}>Regístrate</button>
               </div>
             )}
 
-            {/* Hamburger: siempre visible en móvil */}
             <button className="hdr__hamburger" onClick={() => setDrawerOpen(true)} aria-label="Abrir menú">
               <HamburgerIcon />
             </button>
@@ -133,10 +184,7 @@ export default function Header() {
 
       <aside className={`drawer ${drawerOpen ? 'open' : ''}`}>
         <div className="drawer__header">
-          <div className="drawer__logo">
-            <span className="hdr__logo-mark" style={{ width: 30, height: 30, fontSize: 11 }}>T</span>
-            <span className="drawer__logo-name">TEMU</span>
-          </div>
+          <LogoAnimado size="drawer" />
           <button className="drawer__close" onClick={() => setDrawerOpen(false)}><X size={18}/></button>
         </div>
 
@@ -234,8 +282,7 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
         if (!name)  { setError('Ingresa tu nombre.');    setLoading(false); return; }
         if (!phone) { setError('Ingresa tu teléfono.');  setLoading(false); return; }
         const { error } = await supabase.auth.signUp({
-          email,
-          password,
+          email, password,
           options: { data: { full_name: name, phone } },
         });
         if (error) throw error;
@@ -257,9 +304,8 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
       <div className="modal-card" role="dialog" aria-modal="true">
         <button className="modal-close" onClick={onClose} aria-label="Cerrar"><X size={18}/></button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1.5rem' }}>
-          <span className="hdr__logo-mark">T</span>
-          <span className="hdr__logo-name" style={{ color: '#000' }}>TEMU</span>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:'1.5rem' }}>
+          <LogoAnimado size="drawer" />
         </div>
 
         <h2 className="modal-title">{isLogin ? 'Bienvenido de vuelta' : 'Crea tu cuenta'}</h2>
@@ -279,26 +325,20 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
                 <label className="modal-label">Teléfono</label>
                 <div className="modal-phone-wrap">
                   <span className="modal-phone-prefix">+56</span>
-                  <input
-                    className="modal-input modal-input--phone"
-                    type="tel"
-                    placeholder="9 1234 5678"
-                    value={phone}
+                  <input className="modal-input modal-input--phone" type="tel"
+                    placeholder="9 1234 5678" value={phone}
                     onChange={e => setPhone(e.target.value.replace(/[^\d\s]/g, ''))}
-                    disabled={loading}
-                  />
+                    disabled={loading}/>
                 </div>
               </div>
             </>
           )}
-
           <div className="modal-field">
             <label className="modal-label">Email</label>
             <input className="modal-input" type="email" placeholder="tu@email.com"
               value={email} onChange={e => setEmail(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSubmit()} disabled={loading}/>
           </div>
-
           <div className="modal-field">
             <label className="modal-label">Contraseña</label>
             <div className="modal-pwd-wrap">
@@ -364,7 +404,6 @@ const CSS = `
 
   .hdr__actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
 
-  /* Botones de auth: solo visibles en desktop */
   .hdr__auth-desktop{display:none;align-items:center;gap:4px}
   @media(min-width:768px){.hdr__auth-desktop{display:flex}}
 
@@ -383,7 +422,6 @@ const CSS = `
   .user-menu__item{display:flex;align-items:center;gap:8px;width:100%;padding:10px;border-radius:8px;border:none;background:transparent;color:#ccc;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s}
   .user-menu__item:hover{background:#1a1a1a;color:#fff}
 
-  /* Hamburger: visible en móvil, oculto en desktop */
   .hdr__hamburger{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:8px;background:transparent;border:none;color:#fff;cursor:pointer;transition:background .18s;margin-left:6px}
   .hdr__hamburger:hover{background:#1a1a1a}
   @media(min-width:768px){.hdr__hamburger{display:none}}
@@ -422,7 +460,6 @@ const CSS = `
   .drawer__btn-solid:hover{background:#e8e8e8}
   .drawer__location{display:flex;align-items:center;gap:5px;justify-content:center;margin-top:10px;color:#333;font-size:11px}
 
-  /* Modal */
   .modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);animation:fadeIn .2s ease both}
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
   .modal-card{position:fixed;top:50%;left:50%;z-index:501;transform:translate(-50%,-50%);background:#fff;border-radius:20px;padding:2rem 1.75rem;width:min(420px,92vw);box-shadow:0 24px 80px rgba(0,0,0,.4);animation:modalUp .28s cubic-bezier(.22,.68,0,1.2) both;font-family:'DM Sans',sans-serif;max-height:90vh;overflow-y:auto}
@@ -438,13 +475,11 @@ const CSS = `
   .modal-input:focus{border-color:#000;background:#fff}
   .modal-input::placeholder{color:#bbb}
   .modal-input:disabled{opacity:.5}
-
   .modal-phone-wrap{display:flex;align-items:center;border:1.5px solid #e5e5e5;border-radius:10px;background:#fafafa;overflow:hidden;transition:border-color .2s}
   .modal-phone-wrap:focus-within{border-color:#000;background:#fff}
   .modal-phone-prefix{padding:12px 10px 12px 14px;font-size:.93rem;font-weight:600;color:#555;border-right:1.5px solid #e5e5e5;white-space:nowrap;flex-shrink:0}
   .modal-input--phone{border:none !important;border-radius:0 !important;background:transparent !important;padding-left:10px}
   .modal-input--phone:focus{border:none;outline:none}
-
   .modal-pwd-wrap{position:relative}
   .modal-input--pwd{padding-right:44px}
   .modal-pwd-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#aaa;cursor:pointer;padding:4px;display:flex;align-items:center}

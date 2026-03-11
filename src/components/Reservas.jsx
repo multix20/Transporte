@@ -196,22 +196,78 @@ async function contarAsientosOcupados(rutaKey, fecha) {
   return reservas ? reservas.reduce((acc, r) => acc + (r.num_asientos || 1), 0) : 0;
 }
 
-// ── Tarifa por km ─────────────────────────────────────────────────────────────
-const PRECIO_KM        = 800;   // CLP por km
-const PRECIO_MIN_COMP  = 8000;  // mínimo compartido
-const PRECIO_MIN_VAN   = 50000; // mínimo van privada
-const PRECIO_VAN_MULTI = 3.5;   // multiplicador van vs compartido
+// ── Tarifas ───────────────────────────────────────────────────────────────────
+// Rutas fijas: precio exacto definido manualmente
+// Rutas libres: cálculo automático por km
+const PRECIO_KM        = 800;
+const PRECIO_MIN_COMP  = 5000;
+const PRECIO_MIN_VAN   = 50000;
+
+// Tarifas fijas por par de puntos conocidos (ida y vuelta simétricas)
+// Zonas geográficas con radio en km
+const ZONAS = [
+  { id:"aeropuerto", lat:-38.9258, lng:-72.6372, radio:8  }, // Aeropuerto ZCO
+  { id:"temuco",     lat:-38.7359, lng:-72.5904, radio:12 }, // Temuco ciudad
+  { id:"pucon",      lat:-39.2724, lng:-71.9766, radio:10 }, // Pucón
+  { id:"villarrica", lat:-39.2833, lng:-72.2333, radio:10 }, // Villarrica
+];
+
+const TARIFAS_FIJAS = {
+  "temuco-aeropuerto":     { persona: 5000,  van: 50000  },
+  "aeropuerto-temuco":     { persona: 5000,  van: 50000  },
+  "aeropuerto-pucon":      { persona: 10000, van: 100000 },
+  "pucon-aeropuerto":      { persona: 10000, van: 100000 },
+  "aeropuerto-villarrica": { persona: 10000, van: 100000 },
+  "villarrica-aeropuerto": { persona: 10000, van: 100000 },
+  "temuco-pucon":          { persona: 10000, van: 100000 },
+  "pucon-temuco":          { persona: 10000, van: 100000 },
+  "temuco-villarrica":     { persona: 10000, van: 100000 },
+  "villarrica-temuco":     { persona: 10000, van: 100000 },
+};
+
+/** Detecta a qué zona pertenece un punto por proximidad (Haversine) */
+function detectarZona(lat, lng) {
+  const R = 6371;
+  for (const z of ZONAS) {
+    const dLat = (lat - z.lat) * Math.PI / 180;
+    const dLng = (lng - z.lng) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 +
+              Math.cos(z.lat * Math.PI/180) * Math.cos(lat * Math.PI/180) *
+              Math.sin(dLng/2)**2;
+    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    if (dist <= z.radio) return z.id;
+  }
+  return null;
+}
 
 /**
- * Calcula tarifas a partir de distancia en metros.
- * Cuando Google Maps esté conectado, se reemplaza la distancia mock
- * por el valor real de la Distance Matrix API.
+ * Devuelve tarifas para un par origen-destino.
+ * Primero intenta por ID, luego por detección geográfica, luego calcula por km.
  */
-function calcularTarifas(distanciaMetros) {
-  const km      = distanciaMetros / 1000;
+function calcularTarifas(distanciaMetros, origenObj, destinoObj) {
+  const km = Math.round(distanciaMetros / 1000);
+
+  // 1. Intentar por ID del punto frecuente seleccionado
+  const idO = origenObj?.id;
+  const idD = destinoObj?.id;
+  if (idO && idD && TARIFAS_FIJAS[`${idO}-${idD}`]) {
+    const f = TARIFAS_FIJAS[`${idO}-${idD}`];
+    return { persona: f.persona, van: f.van, km: `${km} km` };
+  }
+
+  // 2. Detectar zona por coordenadas (para direcciones libres escritas)
+  const zonaO = idO || detectarZona(origenObj?.lat, origenObj?.lng);
+  const zonaD = idD || detectarZona(destinoObj?.lat, destinoObj?.lng);
+  const key   = zonaO && zonaD ? `${zonaO}-${zonaD}` : null;
+  if (key && TARIFAS_FIJAS[key]) {
+    const f = TARIFAS_FIJAS[key];
+    return { persona: f.persona, van: f.van, km: `${km} km` };
+  }
+
+  // 3. Cálculo libre por km
   const persona = Math.max(PRECIO_MIN_COMP, Math.round(km * PRECIO_KM / 100) * 100);
-  const van     = Math.max(PRECIO_MIN_VAN,  Math.round(km * PRECIO_KM * PRECIO_VAN_MULTI / 500) * 500);
-  return { persona, van, km: `${Math.round(km)} km` };
+  const van     = Math.max(PRECIO_MIN_VAN,  Math.round(km * PRECIO_KM * 3.5 / 500) * 500);
+  return { persona, van, km: `${km} km` };
 }
 
 // ── Servicio de geocodificación — Nominatim (OpenStreetMap, 100% gratuito) ────
@@ -301,22 +357,29 @@ export default function Reservas() {
 
   const topRef = useRef(null);
 
-  // ── Calcular distancia cuando cambian origen y destino ─────────────────────
+  // ── Resetear tarifas al cambiar origen o destino ─────────────────────────
   useEffect(() => {
-    if (!origen || !destino) { setDistanciaM(null); setRutaDataDyn(null); return; }
-    setCalculando(true);
-    obtenerDistancia(origen, destino)
-      .then(metros => {
-        setDistanciaM(metros);
-        const tarifas = calcularTarifas(metros);
-        setRutaDataDyn({
-          ...tarifas,
-          duracion: `~${Math.round(metros / 1000 / 60)} min`, // estimación simple
-        });
-      })
-      .catch(() => setError("No se pudo calcular la distancia. Intenta de nuevo."))
-      .finally(() => setCalculando(false));
+    setRutaDataDyn(null);
+    setDistanciaM(null);
   }, [origen, destino]);
+
+  // ── Calcular tarifa al presionar "Ver tarifas" ─────────────────────────────
+  const verTarifas = async () => {
+    if (!origen || !destino || !fecha) return;
+    setCalculando(true);
+    setError("");
+    try {
+      const metros  = await obtenerDistancia(origen, destino);
+      const tarifas = calcularTarifas(metros, origen, destino);
+      setDistanciaM(metros);
+      setRutaDataDyn({ ...tarifas, duracion: `~${Math.round(metros / 1000 / 60)} min` });
+      ir("tarifas");
+    } catch {
+      setError("No se pudo calcular la ruta. Intenta de nuevo.");
+    } finally {
+      setCalculando(false);
+    }
+  };
 
   // rutaKey para compatibilidad con contarAsientosOcupados
   const rutaKey = origen?.id && destino?.id ? `${origen.id}-${destino.id}` : null;
@@ -567,11 +630,15 @@ export default function Reservas() {
     <div ref={topRef} style={S.root}>
       <style>{css}</style>
       <div style={S.wrap}>
+
+        {/* Top bar */}
         <div style={S.topBar}>
           <button className="btn-back" onClick={() => ir("inicio")}><IcoChevron dir="left" c="#1a1611" size={20}/></button>
           <span style={S.topTitle}>Elige tu viaje</span>
           <div style={{ width:36 }}/>
         </div>
+
+        {/* Ruta + fecha resumen */}
         <div style={S.rutaPill} className="fade-in">
           <div style={S.rutaDot}/>
           <div style={{ flex:1 }}>
@@ -581,50 +648,94 @@ export default function Reservas() {
           </div>
           <div style={{ textAlign:"right" }}>
             <div style={S.pillMeta}>{fmt(fecha).split(",")[0]}</div>
-            <div style={S.pillMeta}>{pasajeros} pax · {rutaData?.km}</div>
+            <div style={S.pillMeta}>{pasajeros} pax · {rutaData?.km || "—"}</div>
           </div>
         </div>
+
+        {/* Cards de tarifa */}
         <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:4 }}>
-          <button className={`tarifa-card${tipoViaje==="compartido"?" tarifa-on":""}`} onClick={() => setTipoViaje("compartido")}>
-            <div style={S.tarifaIco}><IcoBus size={30} c={tipoViaje==="compartido"?"#1a1611":"#9a9080"}/></div>
+
+          {/* Compartido */}
+          <button
+            className={`tarifa-card${tipoViaje==="compartido"?" tarifa-on":""}`}
+            onClick={() => setTipoViaje("compartido")}
+          >
+            <div style={S.tarifaIco}>
+              <IcoBus size={30} c={tipoViaje==="compartido"?"#1a1611":"#9a9080"}/>
+            </div>
             <div style={{ flex:1, textAlign:"left" }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ fontWeight:700, fontSize:"1rem", color:"#1a1611" }}>Compartido</span>
-                {tipoViaje==="compartido" && <span style={S.badge}>Más económico</span>}
+                <span style={S.badge}>Más económico</span>
               </div>
               <div style={{ fontSize:"0.75rem", color:"#9a9080", marginTop:3 }}>
-                {rutaData?.duracion} · {asientosLibres} asientos libres
+                {asientosLibres} asientos libres · {rutaData?.duracion || ""}
               </div>
             </div>
             <div style={{ textAlign:"right" }}>
-              <div style={{ fontWeight:800, fontSize:"1.1rem", color:"#1a1611" }}>
+              <div style={{ fontWeight:800, fontSize:"1.25rem", color:"#1a1611" }}>
                 {rutaData ? precio(rutaData.persona * pasajeros) : "—"}
               </div>
-              {pasajeros > 1 && <div style={{ fontSize:"0.7rem", color:"#9a9080" }}>{precio(rutaData?.persona||0)} × {pasajeros}</div>}
+              {pasajeros > 1
+                ? <div style={{ fontSize:"0.7rem", color:"#9a9080" }}>{precio(rutaData?.persona||0)} × {pasajeros} pax</div>
+                : <div style={{ fontSize:"0.7rem", color:"#9a9080" }}>por pasajero</div>
+              }
             </div>
           </button>
-          <button className={`tarifa-card${tipoViaje==="van_completa"?" tarifa-on":""}`} onClick={() => setTipoViaje("van_completa")}>
-            <div style={S.tarifaIco}><IcoVan size={30} c={tipoViaje==="van_completa"?"#1a1611":"#9a9080"}/></div>
+
+          {/* Van privada */}
+          <button
+            className={`tarifa-card${tipoViaje==="van_completa"?" tarifa-on":""}`}
+            onClick={() => setTipoViaje("van_completa")}
+          >
+            <div style={S.tarifaIco}>
+              <IcoVan size={30} c={tipoViaje==="van_completa"?"#1a1611":"#9a9080"}/>
+            </div>
             <div style={{ flex:1, textAlign:"left" }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ fontWeight:700, fontSize:"1rem", color:"#1a1611" }}>Van privada</span>
+                <span style={{ ...S.badge, background:"#3d2e1e" }}>Exclusiva</span>
               </div>
               <div style={{ fontSize:"0.75rem", color:"#9a9080", marginTop:3 }}>
-                {rutaData?.duracion} · Exclusiva hasta {MAX_ASIENTOS} pax
+                Hasta {MAX_ASIENTOS} pax · {rutaData?.duracion || ""}
               </div>
             </div>
             <div style={{ textAlign:"right" }}>
-              <div style={{ fontWeight:800, fontSize:"1.1rem", color:"#1a1611" }}>{rutaData ? precio(rutaData.van) : "—"}</div>
+              <div style={{ fontWeight:800, fontSize:"1.25rem", color:"#1a1611" }}>
+                {rutaData ? precio(rutaData.van) : "—"}
+              </div>
               <div style={{ fontSize:"0.7rem", color:"#9a9080" }}>van completa</div>
             </div>
           </button>
         </div>
-        <button className="btn-confirmar" style={{ marginTop:20 }} disabled={!tipoViaje} onClick={() => ir("confirmar")}>
-          {!tipoViaje ? "Selecciona un viaje"
-            : tipoViaje==="compartido" ? `Reservar asiento — ${precio(rutaData?.persona*pasajeros||0)}`
-            : `Reservar van — ${precio((rutaData?.van||0)*0.5)} abono`}
+
+        {/* Nota de garantía */}
+        {tipoViaje && (
+          <div style={{ display:"flex", alignItems:"flex-start", gap:8, marginTop:14, padding:"10px 14px", background:"#F5EDD8", borderRadius:12, border:"1px solid #E8D8B0" }} className="fade-in">
+            <span style={{ fontSize:"1rem" }}>{tipoViaje === "compartido" ? "🙌" : "🔒"}</span>
+            <p style={{ fontSize:"0.76rem", color:"#6b5e4e", lineHeight:1.5 }}>
+              {tipoViaje === "compartido"
+                ? "Sin costo hasta que se confirme el viaje. Te avisamos por WhatsApp."
+                : "Se confirma con el 50% de abono. El resto se paga al viajar."}
+            </p>
+          </div>
+        )}
+
+        <button
+          className="btn-confirmar"
+          style={{ marginTop:16 }}
+          disabled={!tipoViaje}
+          onClick={() => ir("confirmar")}
+        >
+          {!tipoViaje
+            ? "Selecciona un viaje"
+            : tipoViaje === "compartido"
+              ? `Reservar asiento — ${precio(rutaData?.persona * pasajeros || 0)}`
+              : `Reservar van — ${precio((rutaData?.van || 0) * 0.5)} abono`}
         </button>
-        <p style={{ textAlign:"center", fontSize:"0.72rem", color:"#C8BEA8", marginTop:12 }}>Sin costo adicional por reservar</p>
+        <p style={{ textAlign:"center", fontSize:"0.72rem", color:"#C8BEA8", marginTop:10 }}>
+          Sin costo adicional por reservar
+        </p>
       </div>
     </div>
   );
@@ -678,17 +789,6 @@ export default function Reservas() {
           />
         </div>
 
-        {/* Badge de distancia / calculando */}
-        {(calculando || rutaDataDyn) && (
-          <div style={S.distBadge} className="fade-in">
-            {calculando ? (
-              <><span className="btn-spinner" style={{ width:12, height:12, borderWidth:1.5 }}/> Calculando ruta…</>
-            ) : (
-              <><span>📍</span> {rutaDataDyn.km} · tarifa desde {precio(rutaDataDyn.persona)}/pax</>
-            )}
-          </div>
-        )}
-
         {/* ── Fecha + Pasajeros ── */}
         <div style={{ display:"flex", gap:10, marginTop:10 }} className="fade-in">
           <DatePicker fecha={fecha} setFecha={setFecha} hoy={hoy} fmt={fmt} />
@@ -698,20 +798,22 @@ export default function Reservas() {
         <button
           className="btn-confirmar"
           style={{ marginTop:14 }}
-          disabled={!origen || !destino || !fecha || calculando || !rutaDataDyn}
-          onClick={() => ir("tarifas")}
+          disabled={!origen || !destino || !fecha || calculando}
+          onClick={verTarifas}
         >
-          {calculando ? "Calculando ruta…" : "Ver tarifas"}
+          {calculando
+            ? <><span className="btn-spinner" style={{marginRight:8}}/> Calculando…</>
+            : "Ver tarifas"}
         </button>
 
         <div style={{ marginTop:32 }} className="fade-in">
           <p style={S.sectionLabel}>Rutas frecuentes</p>
           <div style={{ display:"flex", flexDirection:"column" }}>
             {[
-              { o: PUNTOS_FRECUENTES[0], d: PUNTOS_FRECUENTES[1], label:"Aeropuerto → Pucón",      meta:"~95 km · desde $76.000" },
-              { o: PUNTOS_FRECUENTES[0], d: PUNTOS_FRECUENTES[2], label:"Aeropuerto → Villarrica", meta:"~80 km · desde $64.000" },
-              { o: PUNTOS_FRECUENTES[1], d: PUNTOS_FRECUENTES[0], label:"Pucón → Aeropuerto",      meta:"~95 km · desde $76.000" },
-              { o: PUNTOS_FRECUENTES[2], d: PUNTOS_FRECUENTES[0], label:"Villarrica → Aeropuerto", meta:"~80 km · desde $64.000" },
+              { o: PUNTOS_FRECUENTES[0], d: PUNTOS_FRECUENTES[1], label:"Aeropuerto → Pucón",      meta:"~95 km · desde $10.000/pax · van $100.000" },
+              { o: PUNTOS_FRECUENTES[0], d: PUNTOS_FRECUENTES[2], label:"Aeropuerto → Villarrica", meta:"~80 km · desde $10.000/pax · van $100.000" },
+              { o: PUNTOS_FRECUENTES[1], d: PUNTOS_FRECUENTES[0], label:"Pucón → Aeropuerto",      meta:"~95 km · desde $10.000/pax · van $100.000" },
+              { o: PUNTOS_FRECUENTES[2], d: PUNTOS_FRECUENTES[0], label:"Villarrica → Aeropuerto", meta:"~80 km · desde $10.000/pax · van $100.000" },
             ].map((r,i) => (
               <button key={i} className="ruta-row" onClick={() => { setOrigen(r.o); setDestino(r.d); }}>
                 <div style={S.rutaIcoSmall}>{r.o.id==="aeropuerto"?"✈️":r.o.id==="pucon"?"🏔️":"🌋"}</div>
@@ -824,8 +926,62 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled }) {
   const [activo,      setActivo]      = useState(false);
   const [resultados,  setResultados]  = useState([]);
   const [buscando,    setBuscando]    = useState(false);
+  const [geolocando, setGeolocando] = useState(false);
   const wrapRef   = useRef(null);
   const timerRef  = useRef(null);
+
+  // Geolocalizar al presionar el botón
+  const ubicarme = () => {
+    if (!navigator.geolocation) {
+      alert("Tu navegador no soporta geolocalización.");
+      return;
+    }
+    // En http:// los browsers usan IP en vez de GPS — avisar al usuario
+    if (location.protocol !== "https:" && location.hostname !== "localhost") {
+      alert("La geolocalización precisa requiere conexión segura (https).");
+      return;
+    }
+    setGeolocando(true);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        // Si la precisión es muy baja (>500m) probablemente es geoloc por IP
+        if (coords.accuracy > 500) {
+          setGeolocando(false);
+          setQuery("Precisión insuficiente — escribe tu dirección");
+          return;
+        }
+        try {
+          const url = `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json&accept-language=es&zoom=18`;
+          const res  = await fetch(url);
+          const data = await res.json();
+          const label = [
+            data.address?.road,
+            data.address?.house_number,
+            data.address?.suburb || data.address?.neighbourhood || data.address?.city_district,
+            data.address?.city   || data.address?.town,
+          ].filter(Boolean).join(", ");
+          const labelFinal = label || data.display_name.split(",").slice(0,3).join(",").trim();
+          onChange({
+            label: labelFinal,
+            lat:   coords.latitude,
+            lng:   coords.longitude,
+          });
+          setQuery(labelFinal);
+        } catch {
+          setQuery("No se pudo obtener la dirección");
+        } finally {
+          setGeolocando(false);
+        }
+      },
+      (err) => {
+        setGeolocando(false);
+        if (err.code === 1) setQuery("Permiso denegado — escribe tu dirección");
+        else if (err.code === 2) setQuery("Ubicación no disponible");
+        else setQuery("Tiempo agotado — intenta de nuevo");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
 
   // Sincronizar input con valor externo
   useEffect(() => {
@@ -913,12 +1069,46 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled }) {
               style={{ background:"none", border:"none", cursor:"pointer", padding:"2px 4px", color:"#C8BEA8", fontSize:"1.1rem", lineHeight:1 }}
             >×</button>
           )}
+          {dotStyle === "origen" && !value && !buscando && (
+            <button
+              onMouseDown={e => { e.preventDefault(); ubicarme(); }}
+              title="Usar mi ubicación actual"
+              style={{
+                background:"none", border:"none", cursor: geolocando ? "wait" : "pointer",
+                padding:"4px 6px", color: geolocando ? "#C8BEA8" : "#9a9080",
+                display:"flex", alignItems:"center", transition:"color .2s",
+              }}
+            >
+              {geolocando
+                ? <span className="btn-spinner" style={{ width:14, height:14, borderWidth:1.5, borderTopColor:"#9a9080", borderColor:"#D4CBB8" }}/>
+                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                    <circle cx="12" cy="12" r="8" strokeDasharray="2 3"/>
+                  </svg>
+              }
+            </button>
+          )}
         </div>
       </div>
 
       {/* Dropdown */}
       {mostrarDropdown && (
         <div style={S.dropdown}>
+          {/* Usar mi ubicación */}
+          {dotStyle === "origen" && !value && (
+            <button className="drop-item" onMouseDown={e => { e.preventDefault(); ubicarme(); setAbierto(false); }}
+              style={{ borderBottom:"1px solid #F0EBE0" }}>
+              <div style={{ ...S.dropIcon, background:"#EEF9F0" }}>📍</div>
+              <div style={{ flex:1, textAlign:"left" }}>
+                <div style={{ fontSize:"0.85rem", fontWeight:600, color:"#1a7a3f" }}>
+                  {geolocando ? "Obteniendo ubicación…" : "Usar mi ubicación actual"}
+                </div>
+                <div style={{ fontSize:"0.72rem", color:"#9a9080", marginTop:1 }}>GPS del dispositivo</div>
+              </div>
+            </button>
+          )}
+
           {/* Puntos frecuentes */}
           {frecuentes.length > 0 && (
             <>

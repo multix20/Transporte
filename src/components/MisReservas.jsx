@@ -13,8 +13,8 @@ export default function MisReservas({ onClose }) {
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState('');
   const [userEmail,   setUserEmail]   = useState('');
-  const [confirmId,   setConfirmId]   = useState(null);   // id en espera de confirmación
-  const [deleting,    setDeleting]    = useState(null);   // id siendo eliminado
+  const [confirmId,   setConfirmId]   = useState(null);
+  const [deleting,    setDeleting]    = useState(null);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -30,9 +30,26 @@ export default function MisReservas({ onClose }) {
         const email = session.user.email;
         setUserEmail(email);
 
+        // JOIN: reservas → viajes → rutas para obtener fecha, ruta y tipo
         const { data, error: err } = await supabase
           .from('reservas')
-          .select('*')
+          .select(`
+            id,
+            estado,
+            num_asientos,
+            notas,
+            created_at,
+            viajes (
+              fecha,
+              tipo,
+              hora_salida,
+              rutas (
+                nombre,
+                origen,
+                destino
+              )
+            )
+          `)
           .eq('email', email)
           .order('created_at', { ascending: false });
 
@@ -48,7 +65,7 @@ export default function MisReservas({ onClose }) {
   }, []);
 
   const handleDelete = async (id) => {
-    if (confirmId !== id) { setConfirmId(id); return; }   // primer clic → pedir confirmación
+    if (confirmId !== id) { setConfirmId(id); return; }
     setDeleting(id);
     try {
       const { error: err } = await supabase.from('reservas').delete().eq('id', id);
@@ -72,10 +89,9 @@ export default function MisReservas({ onClose }) {
   return (
     <>
       <style>{CSS}</style>
-
       <div className="mr-overlay" onClick={onClose} />
-
       <div className="mr-panel" role="dialog" aria-modal="true">
+
         {/* Header */}
         <div className="mr-header">
           <div>
@@ -112,7 +128,12 @@ export default function MisReservas({ onClose }) {
           )}
 
           {!loading && reservas.map((r) => {
-            const st = ESTADO_STYLES[r.estado] ?? ESTADO_STYLES.pendiente;
+            const st     = ESTADO_STYLES[r.estado] ?? ESTADO_STYLES.pendiente;
+            const viaje  = r.viajes;
+            const ruta   = viaje?.rutas;
+            const rutaNombre = ruta?.nombre || `${ruta?.origen || ''} → ${ruta?.destino || ''}` || '—';
+            const tipo   = viaje?.tipo === 'compartido' ? 'Compartido' : 'Van privada';
+
             return (
               <div key={r.id} className="mr-card">
                 {/* Estado badge */}
@@ -123,24 +144,24 @@ export default function MisReservas({ onClose }) {
                 {/* Ruta */}
                 <div className="mr-ruta">
                   <MapPin size={14} className="mr-icon" />
-                  <span>{r.ruta}</span>
+                  <span>{rutaNombre}</span>
                 </div>
 
                 {/* Grid de datos */}
                 <div className="mr-grid">
                   <div className="mr-data">
                     <Calendar size={13} className="mr-data-icon" />
-                    <span>{formatFecha(r.fecha)}</span>
+                    <span>{formatFecha(viaje?.fecha)}</span>
                   </div>
-                  {r.hora && (
+                  {viaje?.hora_salida && (
                     <div className="mr-data">
                       <Clock size={13} className="mr-data-icon" />
-                      <span>{r.hora}</span>
+                      <span>{viaje.hora_salida}</span>
                     </div>
                   )}
                   <div className="mr-data">
                     <Users size={13} className="mr-data-icon" />
-                    <span>{r.pasajeros} {r.pasajeros === 1 ? 'pasajero' : 'pasajeros'}</span>
+                    <span>{r.num_asientos} {r.num_asientos === 1 ? 'pasajero' : 'pasajeros'}</span>
                   </div>
                   <div className="mr-data">
                     <Hash size={13} className="mr-data-icon" />
@@ -148,15 +169,10 @@ export default function MisReservas({ onClose }) {
                   </div>
                 </div>
 
-                {/* Vuelo (si aplica) */}
-                {r.vuelo_numero && (
-                  <div className="mr-vuelo">
-                    <Plane size={12} />
-                    <span>Vuelo {r.vuelo_numero}</span>
-                    {r.vuelo_origen && <span>· {r.vuelo_origen} → {r.vuelo_destino}</span>}
-                    {r.vuelo_hora_llegada && <span>· Llega {r.vuelo_hora_llegada}</span>}
-                  </div>
-                )}
+                {/* Tipo de viaje */}
+                <div className="mr-tipo">
+                  {viaje?.tipo === 'compartido' ? '🚌' : '🚐'} {tipo}
+                </div>
 
                 {/* Notas */}
                 {r.notas && <p className="mr-notas">"{r.notas}"</p>}
@@ -186,50 +202,37 @@ export default function MisReservas({ onClose }) {
   );
 }
 
-/* ── CSS ─────────────────────────────────────────────────────────────────────── */
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap');
   .mr-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);animation:mrFadeIn .2s ease both}
   @keyframes mrFadeIn{from{opacity:0}to{opacity:1}}
-
   .mr-panel{position:fixed;top:0;right:0;bottom:0;z-index:501;width:min(420px,100vw);background:#fff;display:flex;flex-direction:column;animation:mrSlideIn .32s cubic-bezier(.4,0,.2,1) both;font-family:'DM Sans',sans-serif;overflow:hidden}
   @keyframes mrSlideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
-
   .mr-header{display:flex;align-items:flex-start;justify-content:space-between;padding:1.4rem 1.4rem 1rem;border-bottom:1px solid #f0f0f0;flex-shrink:0}
   .mr-title{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:#000;margin:0 0 2px}
   .mr-email{font-size:.78rem;color:#999;margin:0}
   .mr-close{width:34px;height:34px;border-radius:8px;border:1px solid #e5e5e5;background:transparent;color:#999;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .18s;flex-shrink:0}
   .mr-close:hover{border-color:#ccc;color:#000}
-
   .mr-body{flex:1;overflow-y:auto;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:12px}
-
   .mr-center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:3rem 0;color:#999;font-size:.9rem}
   .mr-spinner{width:24px;height:24px;border:2.5px solid #e5e5e5;border-top-color:#000;border-radius:50%;animation:mrSpin .7s linear infinite}
   @keyframes mrSpin{to{transform:rotate(360deg)}}
   .mr-loading-txt{font-size:.85rem;color:#aaa}
-
   .mr-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1rem;text-align:center;color:#999}
   .mr-empty-icon{font-size:2.5rem;margin-bottom:.75rem}
   .mr-empty-title{font-weight:700;color:#555;font-size:1rem;margin:0 0 4px}
   .mr-empty-sub{font-size:.83rem;color:#aaa;margin:0}
-
   .mr-card{background:#fafafa;border:1px solid #efefef;border-radius:14px;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:8px;transition:box-shadow .2s}
   .mr-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07)}
-
   .mr-badge{display:inline-flex;align-items:center;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:99px;letter-spacing:.03em;align-self:flex-start}
-
   .mr-ruta{display:flex;align-items:center;gap:6px;font-size:.95rem;font-weight:600;color:#111}
   .mr-icon{color:#888;flex-shrink:0}
-
   .mr-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
   .mr-data{display:flex;align-items:center;gap:5px;font-size:.8rem;color:#666}
   .mr-data-icon{color:#bbb;flex-shrink:0}
   .mr-id{font-family:monospace;font-size:.75rem;color:#aaa}
-
-  .mr-vuelo{display:flex;align-items:center;gap:5px;font-size:.78rem;color:#888;background:#f5f5f5;padding:6px 9px;border-radius:7px}
-
+  .mr-tipo{font-size:.78rem;color:#888;background:#f5f5f5;padding:5px 9px;border-radius:7px;display:inline-flex;align-items:center;gap:5px;align-self:flex-start}
   .mr-notas{font-size:.8rem;color:#999;font-style:italic;margin:0;border-left:2px solid #e5e5e5;padding-left:8px}
-
   .mr-card-footer{border-top:1px solid #f0f0f0;padding-top:8px;margin-top:2px}
   .mr-btn-delete{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;border:1px solid #fee2e2;background:transparent;color:#dc2626;font-size:.78rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .18s}
   .mr-btn-delete:hover{background:#fef2f2;border-color:#fca5a5}

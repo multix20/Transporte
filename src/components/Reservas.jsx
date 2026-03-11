@@ -35,6 +35,37 @@ function useUsuario() {
   return { usuario, cargando };
 }
 
+// ── Hook: historial de direcciones frecuentes ─────────────────────────────────
+const ADDR_KEY = "llevu_addr_history";
+const MAX_ADDR = 6;
+
+function useAddressHistory() {
+  const [historial, setHistorial] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(ADDR_KEY) || "[]"); }
+    catch { return []; }
+  });
+
+  const guardar = (lugar) => {
+    if (!lugar?.label || lugar.id) return; // No guardar puntos frecuentes fijos
+    setHistorial(prev => {
+      const sin  = prev.filter(h => h.label.toLowerCase() !== lugar.label.toLowerCase());
+      const nuevo = [{ ...lugar, count: 1, ts: Date.now() }, ...sin].slice(0, MAX_ADDR);
+      try { localStorage.setItem(ADDR_KEY, JSON.stringify(nuevo)); } catch {}
+      return nuevo;
+    });
+  };
+
+  const eliminar = (label) => {
+    setHistorial(prev => {
+      const nuevo = prev.filter(h => h.label !== label);
+      try { localStorage.setItem(ADDR_KEY, JSON.stringify(nuevo)); } catch {}
+      return nuevo;
+    });
+  };
+
+  return { historial, guardar, eliminar };
+}
+
 const ORIGENES = [
   { id: "pucon",      label: "Pucón",                 emoji: "🏔️", sub: "Centro ciudad" },
   { id: "villarrica", label: "Villarrica",             emoji: "🌋", sub: "Centro ciudad" },
@@ -105,16 +136,12 @@ const IcoLock = () => (
     <path d="M7 11V7a5 5 0 0110 0v4"/>
   </svg>
 );
-
-// Icono torso/persona
 const IcoPax = ({ size=16, c="#9a9080" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="7" r="4"/>
     <path d="M4 21c0-4 3.582-7 8-7s8 3 8 7"/>
   </svg>
 );
-
-// Icono calendario
 const IcoCal = ({ size=15, c="#9a9080" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="4" width="18" height="18" rx="2"/>
@@ -124,10 +151,8 @@ const IcoCal = ({ size=15, c="#9a9080" }) => (
 
 // ── Helpers Supabase ──────────────────────────────────────────────────────────
 async function obtenerOCrearViaje({ rutaKey, origenId, destinoId, fecha, tipo, precio_por_pax, origenLabel, destinoLabel }) {
-  // Nombre de ruta: usa nombre fijo si existe, si no construye desde labels reales
   const rutaNombre = RUTA_NOMBRE[rutaKey] || `${origenLabel || origenId} → ${destinoLabel || destinoId}`;
 
-  // Buscar ruta existente por nombre exacto
   const { data: rutaExistente } = await supabase
     .from("rutas")
     .select("id")
@@ -136,7 +161,6 @@ async function obtenerOCrearViaje({ rutaKey, origenId, destinoId, fecha, tipo, p
 
   let rutaId = rutaExistente?.id;
 
-  // Crear ruta si no existe
   if (!rutaId) {
     const { data: nuevaRuta, error: errRuta } = await supabase
       .from("rutas")
@@ -205,19 +229,15 @@ async function contarAsientosOcupados(rutaKey, fecha) {
 }
 
 // ── Tarifas ───────────────────────────────────────────────────────────────────
-// Rutas fijas: precio exacto definido manualmente
-// Rutas libres: cálculo automático por km
 const PRECIO_KM        = 800;
 const PRECIO_MIN_COMP  = 5000;
 const PRECIO_MIN_VAN   = 50000;
 
-// Tarifas fijas por par de puntos conocidos (ida y vuelta simétricas)
-// Zonas geográficas con radio en km
 const ZONAS = [
-  { id:"aeropuerto", lat:-38.9258, lng:-72.6372, radio:8  }, // Aeropuerto ZCO
-  { id:"temuco",     lat:-38.7359, lng:-72.5904, radio:12 }, // Temuco ciudad
-  { id:"pucon",      lat:-39.2724, lng:-71.9766, radio:10 }, // Pucón
-  { id:"villarrica", lat:-39.2833, lng:-72.2333, radio:10 }, // Villarrica
+  { id:"aeropuerto", lat:-38.9258, lng:-72.6372, radio:8  },
+  { id:"temuco",     lat:-38.7359, lng:-72.5904, radio:12 },
+  { id:"pucon",      lat:-39.2724, lng:-71.9766, radio:10 },
+  { id:"villarrica", lat:-39.2833, lng:-72.2333, radio:10 },
 ];
 
 const TARIFAS_FIJAS = {
@@ -233,7 +253,6 @@ const TARIFAS_FIJAS = {
   "villarrica-temuco":     { persona: 10000, van: 100000 },
 };
 
-/** Detecta a qué zona pertenece un punto por proximidad (Haversine) */
 function detectarZona(lat, lng) {
   const R = 6371;
   for (const z of ZONAS) {
@@ -248,22 +267,14 @@ function detectarZona(lat, lng) {
   return null;
 }
 
-/**
- * Devuelve tarifas para un par origen-destino.
- * Primero intenta por ID, luego por detección geográfica, luego calcula por km.
- */
 function calcularTarifas(distanciaMetros, origenObj, destinoObj) {
   const km = Math.round(distanciaMetros / 1000);
-
-  // 1. Intentar por ID del punto frecuente seleccionado
   const idO = origenObj?.id;
   const idD = destinoObj?.id;
   if (idO && idD && TARIFAS_FIJAS[`${idO}-${idD}`]) {
     const f = TARIFAS_FIJAS[`${idO}-${idD}`];
     return { persona: f.persona, van: f.van, km: `${km} km` };
   }
-
-  // 2. Detectar zona por coordenadas (para direcciones libres escritas)
   const zonaO = idO || detectarZona(origenObj?.lat, origenObj?.lng);
   const zonaD = idD || detectarZona(destinoObj?.lat, destinoObj?.lng);
   const key   = zonaO && zonaD ? `${zonaO}-${zonaD}` : null;
@@ -271,20 +282,12 @@ function calcularTarifas(distanciaMetros, origenObj, destinoObj) {
     const f = TARIFAS_FIJAS[key];
     return { persona: f.persona, van: f.van, km: `${km} km` };
   }
-
-  // 3. Cálculo libre por km
   const persona = Math.max(PRECIO_MIN_COMP, Math.round(km * PRECIO_KM / 100) * 100);
   const van     = Math.max(PRECIO_MIN_VAN,  Math.round(km * PRECIO_KM * 3.5 / 500) * 500);
   return { persona, van, km: `${km} km` };
 }
 
-// ── Servicio de geocodificación — Nominatim (OpenStreetMap, 100% gratuito) ────
-// Sin API Key, sin billing, sin tarjeta de crédito.
-// Límite: 1 request/segundo (más que suficiente para uso real).
-
-const mapsReady = () => true; // Nominatim siempre está disponible
-
-/** Busca sugerencias de direcciones usando Nominatim */
+// ── Nominatim / OSRM ──────────────────────────────────────────────────────────
 async function buscarDirecciones(query) {
   if (!query || query.length < 3) return [];
   try {
@@ -294,27 +297,22 @@ async function buscarDirecciones(query) {
     const res  = await fetch(url, { headers: { "Accept-Language": "es" } });
     const data = await res.json();
     return data.map(r => ({
-      label:   r.display_name.split(",").slice(0,3).join(",").trim(),
-      sub:     r.display_name.split(",").slice(3,5).join(",").trim(),
-      lat:     parseFloat(r.lat),
-      lng:     parseFloat(r.lon),
+      label: r.display_name.split(",").slice(0,3).join(",").trim(),
+      sub:   r.display_name.split(",").slice(3,5).join(",").trim(),
+      lat:   parseFloat(r.lat),
+      lng:   parseFloat(r.lon),
     }));
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
-/** Calcula distancia real por carretera usando OSRM (OpenStreetMap Routing, gratuito) */
 async function obtenerDistancia(origen, destino) {
   try {
     const url = `https://router.project-osrm.org/route/v1/driving/` +
-      `${origen.lng},${origen.lat};${destino.lng},${destino.lat}` +
-      `?overview=false`;
+      `${origen.lng},${origen.lat};${destino.lng},${destino.lat}?overview=false`;
     const res  = await fetch(url);
     const data = await res.json();
-    if (data.code === "Ok") return data.routes[0].distance; // metros reales
+    if (data.code === "Ok") return data.routes[0].distance;
   } catch {}
-  // Fallback Haversine si OSRM no responde
   const R    = 6371000;
   const dLat = (destino.lat - origen.lat) * Math.PI / 180;
   const dLng = (destino.lng - origen.lng) * Math.PI / 180;
@@ -325,10 +323,7 @@ async function obtenerDistancia(origen, destino) {
   return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) * 1.28);
 }
 
-/** initAutocomplete — no-op, LugarInput usa buscarDirecciones directamente */
-function initAutocomplete() { return null; }
-
-// ── Coordenadas de puntos frecuentes (para sugerencias rápidas) ───────────────
+// ── Puntos frecuentes ─────────────────────────────────────────────────────────
 const PUNTOS_FRECUENTES = [
   { id:"aeropuerto", label:"✈️  Aeropuerto Temuco ZCO", sub:"Terminal principal · La Araucanía", lat:-38.9258, lng:-72.6372 },
   { id:"pucon",      label:"🏔️  Centro de Pucón",        sub:"Pucón, La Araucanía",               lat:-39.2724, lng:-71.9766 },
@@ -338,14 +333,12 @@ const PUNTOS_FRECUENTES = [
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function Reservas() {
   const { usuario, cargando: cargandoAuth } = useUsuario();
+  const { historial, guardar, eliminar }    = useAddressHistory();
 
   const [pantalla,  setPantalla]  = useState("inicio");
+  const [origen,    setOrigen]    = useState(null);
+  const [destino,   setDestino]   = useState(null);
 
-  // Nuevo modelo de datos: objetos con { label, lat, lng } en vez de IDs
-  const [origen,    setOrigen]    = useState(null); // { label, lat, lng }
-  const [destino,   setDestino]   = useState(null); // { label, lat, lng }
-
-  // Compatibilidad hacia atrás (pantallas de tarifas/confirmar usan origenId)
   const origenId  = origen?.id  || "custom";
   const destinoId = destino?.id || "custom";
 
@@ -358,25 +351,25 @@ export default function Reservas() {
   const [asientosOcupados, setAsientosOcupados] = useState(0);
   const [error,     setError]     = useState("");
 
-  // Datos calculados desde Google Maps
-  const [distanciaM,    setDistanciaM]    = useState(null); // metros
-  const [calculando,    setCalculando]    = useState(false);
-  const [rutaDataDyn,   setRutaDataDyn]   = useState(null); // { persona, van, km, duracion }
+  const [distanciaM,  setDistanciaM]  = useState(null);
+  const [calculando,  setCalculando]  = useState(false);
+  const [rutaDataDyn, setRutaDataDyn] = useState(null);
 
   const topRef = useRef(null);
 
-  // ── Resetear tarifas al cambiar origen o destino ─────────────────────────
   useEffect(() => {
     setRutaDataDyn(null);
     setDistanciaM(null);
   }, [origen, destino]);
 
-  // ── Calcular tarifa al presionar "Ver tarifas" ─────────────────────────────
   const verTarifas = async () => {
     if (!origen || !destino || !fecha) return;
     setCalculando(true);
     setError("");
     try {
+      // Guardar en historial solo al calcular (no puntos fijos)
+      guardar(origen);
+      guardar(destino);
       const metros  = await obtenerDistancia(origen, destino);
       const tarifas = calcularTarifas(metros, origen, destino);
       setDistanciaM(metros);
@@ -389,9 +382,7 @@ export default function Reservas() {
     }
   };
 
-  // rutaKey para compatibilidad con contarAsientosOcupados
-  const rutaKey = origen?.id && destino?.id ? `${origen.id}-${destino.id}` : null;
-  // Compatibilidad: rutaData ahora viene del cálculo dinámico
+  const rutaKey      = origen?.id && destino?.id ? `${origen.id}-${destino.id}` : null;
   const rutaData     = rutaDataDyn;
   const rutaLabel    = origen && destino ? `${origen.label.replace(/^.{3}/,"")} → ${destino.label.replace(/^.{3}/,"")}` : "";
   const montoTotal   = !rutaData ? 0 : tipoViaje === "van_completa" ? rutaData.van : rutaData.persona * pasajeros;
@@ -409,7 +400,7 @@ export default function Reservas() {
   const confirmar = async () => {
     setError(""); setEnviando(true);
     try {
-      const tipo = tipoViaje === "compartido" ? "compartido" : "privado";
+      const tipo      = tipoViaje === "compartido" ? "compartido" : "privado";
       const precioPax = tipoViaje === "compartido" ? rutaData.persona : rutaData.van;
 
       const viajeId = await obtenerOCrearViaje({
@@ -440,13 +431,11 @@ export default function Reservas() {
 
       setReservaId(data.id);
       setEnviando(false);
-
       abrirWhatsApp(data.id);
       if (tipoViaje === "van_completa") {
         window.open("https://www.flow.cl/btn.php?token=o6f0a50ad75e315233752a57fb02bdba9453e509", "_blank");
       }
       ir("ok");
-
     } catch (e) {
       setError(e.message || "Error al procesar. Intenta de nuevo.");
       setEnviando(false);
@@ -640,15 +629,11 @@ export default function Reservas() {
     <div ref={topRef} style={S.root}>
       <style>{css}</style>
       <div style={S.wrap}>
-
-        {/* Top bar */}
         <div style={S.topBar}>
           <button className="btn-back" onClick={() => ir("inicio")}><IcoChevron dir="left" c="#1a1611" size={20}/></button>
           <span style={S.topTitle}>Elige tu viaje</span>
           <div style={{ width:36 }}/>
         </div>
-
-        {/* Ruta + fecha resumen */}
         <div style={S.rutaPill} className="fade-in">
           <div style={S.rutaDot}/>
           <div style={{ flex:1 }}>
@@ -661,18 +646,12 @@ export default function Reservas() {
             <div style={S.pillMeta}>{pasajeros} pax · {rutaData?.km || "—"}</div>
           </div>
         </div>
-
-        {/* Cards de tarifa */}
         <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:4 }}>
-
-          {/* Compartido */}
           <button
             className={`tarifa-card${tipoViaje==="compartido"?" tarifa-on":""}`}
             onClick={() => setTipoViaje("compartido")}
           >
-            <div style={S.tarifaIco}>
-              <IcoBus size={30} c={tipoViaje==="compartido"?"#1a1611":"#9a9080"}/>
-            </div>
+            <div style={S.tarifaIco}><IcoBus size={30} c={tipoViaje==="compartido"?"#1a1611":"#9a9080"}/></div>
             <div style={{ flex:1, textAlign:"left" }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ fontWeight:700, fontSize:"1rem", color:"#1a1611" }}>Compartido</span>
@@ -693,14 +672,11 @@ export default function Reservas() {
             </div>
           </button>
 
-          {/* Van privada */}
           <button
             className={`tarifa-card${tipoViaje==="van_completa"?" tarifa-on":""}`}
             onClick={() => setTipoViaje("van_completa")}
           >
-            <div style={S.tarifaIco}>
-              <IcoVan size={30} c={tipoViaje==="van_completa"?"#1a1611":"#9a9080"}/>
-            </div>
+            <div style={S.tarifaIco}><IcoVan size={30} c={tipoViaje==="van_completa"?"#1a1611":"#9a9080"}/></div>
             <div style={{ flex:1, textAlign:"left" }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ fontWeight:700, fontSize:"1rem", color:"#1a1611" }}>Van privada</span>
@@ -719,7 +695,6 @@ export default function Reservas() {
           </button>
         </div>
 
-        {/* Nota de garantía */}
         {tipoViaje && (
           <div style={{ display:"flex", alignItems:"flex-start", gap:8, marginTop:14, padding:"10px 14px", background:"#F5EDD8", borderRadius:12, border:"1px solid #E8D8B0" }} className="fade-in">
             <span style={{ fontSize:"1rem" }}>{tipoViaje === "compartido" ? "🙌" : "🔒"}</span>
@@ -751,7 +726,7 @@ export default function Reservas() {
   );
 
   // ════════════════════════════════════════════════════════════════════════════
-  // PANTALLA: INICIO  ← los cambios están aquí
+  // PANTALLA: INICIO
   // ════════════════════════════════════════════════════════════════════════════
   return (
     <div ref={topRef} style={S.root}>
@@ -766,17 +741,15 @@ export default function Reservas() {
           {usuario && <div style={S.avatar}>{usuario.avatar}</div>}
         </div>
 
-        {/* ── Search box: Autocomplete Origen → Destino ── */}
         <div style={{ display:"flex", flexDirection:"column", gap:8, position:"relative", zIndex:50 }} className="fade-in">
-
           <LugarInput
             placeholder="Punto de partida"
             value={origen}
             onChange={val => { setOrigen(val); setDestino(null); }}
             dotStyle="origen"
+            historial={historial}
+            onEliminarHistorial={eliminar}
           />
-
-          {/* Botón intercambiar + flecha */}
           <div style={S.arrowSep}>
             <button
               style={S.swapBtn}
@@ -789,17 +762,17 @@ export default function Reservas() {
               </svg>
             </button>
           </div>
-
           <LugarInput
             placeholder="¿A dónde vas?"
             value={destino}
             onChange={setDestino}
             dotStyle="destino"
             disabled={!origen}
+            historial={historial}
+            onEliminarHistorial={eliminar}
           />
         </div>
 
-        {/* ── Fecha + Pasajeros ── */}
         <div style={{ display:"flex", gap:10, marginTop:10 }} className="fade-in">
           <DatePicker fecha={fecha} setFecha={setFecha} hoy={hoy} fmt={fmt} />
           <PaxPicker pasajeros={pasajeros} setPasajeros={setPasajeros} max={MAX_ASIENTOS} />
@@ -841,11 +814,9 @@ export default function Reservas() {
   );
 }
 
-// ── DatePicker: calendario nativo con picker ──────────────────────────────────
+// ── DatePicker ────────────────────────────────────────────────────────────────
 function DatePicker({ fecha, setFecha, hoy, fmt }) {
   const inputRef = useRef(null);
-
-  // Texto a mostrar en la pill
   const textoFecha = fecha
     ? (() => {
         const [y,m,d] = fecha.split("-");
@@ -860,95 +831,139 @@ function DatePicker({ fecha, setFecha, hoy, fmt }) {
   const abrir = () => {
     const inp = inputRef.current;
     if (!inp) return;
-    if (inp.showPicker) {
-      try { inp.showPicker(); } catch(e) { inp.focus(); }
-    } else {
-      inp.focus();
-    }
+    if (inp.showPicker) { try { inp.showPicker(); } catch(e) { inp.focus(); } }
+    else inp.focus();
   };
 
   return (
     <div style={{ ...S.pill, flex:1, cursor:"pointer" }} onClick={abrir}>
-      {/* Etiqueta superior con icono de calendario */}
       <div style={{ display:"flex", alignItems:"center", gap:5 }}>
         <IcoCal size={13} c="#9a9080"/>
         <span style={{ fontSize:"0.72rem", color:"#9a9080", fontWeight:600, letterSpacing:"0.02em" }}>Fecha</span>
       </div>
-      {/* Valor */}
-      <span style={{
-        fontWeight: fecha ? 700 : 400,
-        fontSize: "0.9rem",
-        color: fecha ? "#1a1611" : "#9a9080",
-        letterSpacing: "-0.01em",
-      }}>
+      <span style={{ fontWeight: fecha ? 700 : 400, fontSize: "0.9rem", color: fecha ? "#1a1611" : "#9a9080", letterSpacing: "-0.01em" }}>
         {textoFecha}
       </span>
-      {/* Input invisible que dispara el picker nativo */}
       <input
         ref={inputRef}
         type="date"
         min={hoy}
         value={fecha}
         onChange={e => setFecha(e.target.value)}
-        style={{
-          position:"absolute", opacity:0, pointerEvents:"none",
-          width:0, height:0, top:0, left:0,
-        }}
+        style={{ position:"absolute", opacity:0, pointerEvents:"none", width:0, height:0, top:0, left:0 }}
         tabIndex={-1}
       />
     </div>
   );
 }
 
-// ── PaxPicker: icono torso + contador ────────────────────────────────────────
+// ── PaxPicker ─────────────────────────────────────────────────────────────────
 function PaxPicker({ pasajeros, setPasajeros, max }) {
   return (
     <div style={{ ...S.pill, minWidth:120, cursor:"default" }}>
-      {/* Etiqueta con icono de torso */}
       <div style={{ display:"flex", alignItems:"center", gap:5 }}>
         <IcoPax size={13} c="#9a9080"/>
         <span style={{ fontSize:"0.72rem", color:"#9a9080", fontWeight:600, letterSpacing:"0.02em" }}>Pasajeros</span>
       </div>
-      {/* Contador */}
       <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:2 }}>
-        <button
-          className="cnt"
-          onClick={() => setPasajeros(Math.max(1, pasajeros - 1))}
-          style={{ width:26, height:26 }}
-        >−</button>
-        <span style={{ fontWeight:800, fontSize:"1rem", color:"#1a1611", minWidth:18, textAlign:"center" }}>
-          {pasajeros}
-        </span>
-        <button
-          className="cnt"
-          onClick={() => setPasajeros(Math.min(max, pasajeros + 1))}
-          style={{ width:26, height:26 }}
-        >+</button>
+        <button className="cnt" onClick={() => setPasajeros(Math.max(1, pasajeros - 1))} style={{ width:26, height:26 }}>−</button>
+        <span style={{ fontWeight:800, fontSize:"1rem", color:"#1a1611", minWidth:18, textAlign:"center" }}>{pasajeros}</span>
+        <button className="cnt" onClick={() => setPasajeros(Math.min(max, pasajeros + 1))} style={{ width:26, height:26 }}>+</button>
       </div>
     </div>
   );
 }
 
-// ── LugarInput — campo de autocomplete con sugerencias ───────────────────────
-function LugarInput({ placeholder, value, onChange, dotStyle, disabled }) {
-  const [query,       setQuery]       = useState("");
-  const [abierto,     setAbierto]     = useState(false);
-  const [activo,      setActivo]      = useState(false);
-  const [resultados,  setResultados]  = useState([]);
-  const [buscando,    setBuscando]    = useState(false);
-  const [geolocando, setGeolocando] = useState(false);
-  const wrapRef   = useRef(null);
-  const timerRef  = useRef(null);
+// ── LugarInput — con historial de direcciones ─────────────────────────────────
+// Direcciones de ejemplo para el ticker animado
+const EJEMPLOS_DIRECCIONES = [
+  "Los Leones 01256, Temuco",
+  "Av. Alemania 0480, Temuco",
+  "O'Higgins 310, Villarrica",
+  "Urrutia 477, Pucón",
+  "Caupolicán 285, Temuco",
+  "Freire 250, Villarrica",
+  "Colo-Colo 355, Temuco",
+  "Lincoyan 542, Pucón",
+];
 
-  // Geolocalizar al presionar el botón
-  const ubicarme = () => {
+// Ticker de placeholder animado — letras entrando por la izquierda
+function PlaceholderTicker() {
+  const [idx,    setIdx]    = useState(0);
+  const [estado, setEstado] = useState("visible");
+
+  useEffect(() => {
+    const ciclo = setInterval(() => {
+      setEstado("saliendo");
+      setTimeout(() => {
+        setIdx(i => (i + 1) % EJEMPLOS_DIRECCIONES.length);
+        setEstado("entrando");
+        setTimeout(() => setEstado("visible"), 20);
+      }, 300);
+    }, 2800);
+    return () => clearInterval(ciclo);
+  }, []);
+
+  const transforms = {
+    visible:  "translateX(0)",
+    saliendo: "translateX(-120%)",
+    entrando: "translateX(60%)",
+  };
+  const opacities = { visible:1, saliendo:0, entrando:0 };
+
+  return (
+    <span style={{
+      display: "block",
+      overflow: "hidden",
+      flex: 1,
+      pointerEvents: "none",
+    }}>
+      <span style={{
+        display: "block",
+        fontSize: "0.9rem",
+        color: "#B8AFA0",
+        fontFamily: "'DM Sans', sans-serif",
+        fontWeight: 400,
+        whiteSpace: "nowrap",
+        transform: transforms[estado],
+        opacity: opacities[estado],
+        transition: estado === "saliendo"
+          ? "transform 0.28s cubic-bezier(.4,0,1,1), opacity 0.22s ease"
+          : estado === "visible"
+          ? "transform 0.38s cubic-bezier(.2,.8,.3,1), opacity 0.28s ease"
+          : "none",
+        willChange: "transform, opacity",
+      }}>
+        {EJEMPLOS_DIRECCIONES[idx]}
+      </span>
+    </span>
+  );
+}
+
+function LugarInput({ placeholder, value, onChange, dotStyle, disabled, historial = [], onEliminarHistorial }) {
+  const [query,      setQuery]      = useState("");
+  const [abierto,    setAbierto]    = useState(false);
+  const [activo,     setActivo]     = useState(false);
+  const [resultados, setResultados] = useState([]);
+  const [buscando,   setBuscando]   = useState(false);
+  const [geolocando, setGeolocando] = useState(false);
+  // true cuando GPS falló → mostrar ticker de ejemplos
+  const [geoFallback, setGeoFallback] = useState(false);
+  const wrapRef  = useRef(null);
+  const timerRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Geolocalización (manual o automática)
+  const ubicarme = (silencioso = false) => {
     if (!navigator.geolocation) {
-      alert("Tu navegador no soporta geolocalización.");
+      if (!silencioso) alert("Tu navegador no soporta geolocalización.");
+      setGeoFallback(true);
       return;
     }
-    // En http:// los browsers usan IP en vez de GPS — avisar al usuario
+    // En http fuera de localhost, no intentar (fallará silenciosamente)
     if (location.protocol !== "https:" && location.hostname !== "localhost") {
-      alert("La geolocalización precisa requiere conexión segura (https).");
+      if (!silencioso) alert("La geolocalización precisa requiere conexión segura (https).");
+      setGeoFallback(true);
       return;
     }
     setGeolocando(true);
@@ -959,47 +974,44 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled }) {
           const res  = await fetch(url);
           const data = await res.json();
           const label = [
-            data.address?.road,
-            data.address?.house_number,
+            data.address?.road, data.address?.house_number,
             data.address?.suburb || data.address?.neighbourhood || data.address?.city_district,
             data.address?.city   || data.address?.town,
           ].filter(Boolean).join(", ");
           const labelFinal = label || data.display_name.split(",").slice(0,3).join(",").trim();
-          onChange({
-            label: labelFinal,
-            lat:   coords.latitude,
-            lng:   coords.longitude,
-          });
+          onChange({ label: labelFinal, lat: coords.latitude, lng: coords.longitude });
           setQuery(labelFinal);
+          setGeoFallback(false);
         } catch {
-          setQuery("No se pudo obtener la dirección");
-        } finally {
-          setGeolocando(false);
+          if (!silencioso) setQuery("No se pudo obtener la dirección");
+          setGeoFallback(true);
         }
+        finally { setGeolocando(false); }
       },
-      (err) => {
+      () => {
+        // GPS denegado o falló → activar ticker
         setGeolocando(false);
-        if (err.code === 1) setQuery("Permiso denegado — escribe tu dirección");
-        else if (err.code === 2) setQuery("Ubicación no disponible");
-        else setQuery("Tiempo agotado — intenta de nuevo");
+        setGeoFallback(true);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
     );
   };
 
-  // Sincronizar input con valor externo
+  // Auto-GPS al montar (solo en campo origen)
+  useEffect(() => {
+    if (dotStyle === "origen" && !value) ubicarme(true);
+  }, []);  // eslint-disable-line
+
   useEffect(() => {
     if (!activo) setQuery(value ? value.label : "");
   }, [value, activo]);
 
-  // Cerrar al click fuera
   useEffect(() => {
     const fn = (e) => { if (!wrapRef.current?.contains(e.target)) { setAbierto(false); setActivo(false); } };
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
   }, []);
 
-  // Buscar con debounce 400ms
   useEffect(() => {
     clearTimeout(timerRef.current);
     if (query.length < 3) { setResultados([]); return; }
@@ -1012,36 +1024,36 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled }) {
     return () => clearTimeout(timerRef.current);
   }, [query]);
 
-  // Filtrar puntos frecuentes según query
   const frecuentes = PUNTOS_FRECUENTES.filter(p =>
     !query || p.label.toLowerCase().includes(query.toLowerCase()) ||
     p.sub.toLowerCase().includes(query.toLowerCase())
   );
 
+  // Filtrar historial: excluir puntos que ya aparecen como frecuentes fijos
+  const histFiltrado = historial.filter(h =>
+    !query || h.label.toLowerCase().includes(query.toLowerCase())
+  );
+
   const seleccionar = (punto) => {
     onChange(punto);
     setQuery(punto.label.replace(/^[^\w\s]{1,3}\s*/, "").trim());
-    setAbierto(false);
-    setActivo(false);
-    setResultados([]);
+    setAbierto(false); setActivo(false); setResultados([]);
   };
 
   const handleFocus = () => { setActivo(true); setAbierto(true); };
   const handleBlur  = () => setTimeout(() => {
-    if (!wrapRef.current?.contains(document.activeElement)) {
-      setActivo(false); setAbierto(false);
-    }
+    if (!wrapRef.current?.contains(document.activeElement)) { setActivo(false); setAbierto(false); }
   }, 150);
 
-  const dot = dotStyle === "origen"
-    ? <div style={S.dotOrigen}/>
-    : <div style={S.dotDestino}/>;
+  const dot = dotStyle === "origen" ? <div style={S.dotOrigen}/> : <div style={S.dotDestino}/>;
 
-  const mostrarDropdown = abierto && (frecuentes.length > 0 || resultados.length > 0 || buscando || query.length >= 3);
+  const mostrarDropdown = abierto && (
+    frecuentes.length > 0 || resultados.length > 0 ||
+    histFiltrado.length > 0 || buscando || query.length >= 3
+  );
 
   return (
     <div ref={wrapRef} style={{ position:"relative" }}>
-      {/* Campo */}
       <div style={{
         ...S.searchBoxSingle,
         borderColor: activo ? "#1a1611" : "#D4CBB8",
@@ -1051,36 +1063,60 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled }) {
       }}>
         <div style={S.searchRow}>
           {dot}
-          <input
-            value={query}
-            onChange={e => { setQuery(e.target.value); setAbierto(true); }}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            placeholder={placeholder}
-            disabled={disabled}
-            autoComplete="off"
-            style={{
-              flex:1, background:"transparent", border:"none", outline:"none",
-              fontSize:"0.95rem", fontFamily:"'DM Sans', sans-serif",
-              fontWeight: value ? 600 : 400,
-              color: value ? "#1a1611" : "#9a9080",
-            }}
-          />
-          {buscando && <span className="btn-spinner" style={{ width:14, height:14, borderWidth:1.5, borderTopColor:"#9a9080", borderColor:"#D4CBB8" }}/>}
+
+          {/* Wrapper relativo para superponer ticker sobre input vacío */}
+          <div style={{ flex:1, position:"relative", display:"flex", alignItems:"center", overflow:"hidden" }}>
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={e => { setQuery(e.target.value); setAbierto(true); }}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              placeholder={activo ? placeholder : ""}
+              disabled={disabled}
+              autoComplete="off"
+              style={{
+                width:"100%", background:"transparent", border:"none", outline:"none",
+                fontSize:"0.95rem", fontFamily:"'DM Sans', sans-serif",
+                fontWeight: value ? 600 : 400,
+                color: value ? "#1a1611" : "#9a9080",
+                caretColor: (!activo && !query) ? "transparent" : undefined,
+              }}
+            />
+            {/* Ticker: siempre que el campo esté vacío, sin foco, y sin GPS cargando */}
+            {dotStyle === "origen" && !value && !query && !activo && !geolocando && (
+              <div style={{
+                position:"absolute", left:0, right:0, top:0, bottom:0,
+                display:"flex", alignItems:"center",
+                pointerEvents:"none", overflow:"hidden",
+              }}>
+                <PlaceholderTicker/>
+              </div>
+            )}
+            {/* Spinner GPS — reemplaza el ticker mientras busca ubicación */}
+            {dotStyle === "origen" && geolocando && !value && (
+              <div style={{ position:"absolute", left:0, display:"flex", alignItems:"center", gap:6, pointerEvents:"none" }}>
+                <span className="btn-spinner" style={{ width:13, height:13, borderWidth:1.5, borderTopColor:"#9a9080", borderColor:"#D4CBB8" }}/>
+                <span style={{ fontSize:"0.82rem", color:"#B8AFA0" }}>Buscando tu ubicación…</span>
+              </div>
+            )}
+          </div>
+
+          {buscando && <span className="btn-spinner" style={{ width:14, height:14, borderWidth:1.5, borderTopColor:"#9a9080", borderColor:"#D4CBB8", flexShrink:0 }}/>}
           {value && !buscando && (
             <button
               onMouseDown={e => { e.preventDefault(); onChange(null); setQuery(""); setResultados([]); }}
-              style={{ background:"none", border:"none", cursor:"pointer", padding:"2px 4px", color:"#C8BEA8", fontSize:"1.1rem", lineHeight:1 }}
+              style={{ background:"none", border:"none", cursor:"pointer", padding:"2px 4px", color:"#C8BEA8", fontSize:"1.1rem", lineHeight:1, flexShrink:0 }}
             >×</button>
           )}
           {dotStyle === "origen" && !value && !buscando && (
             <button
-              onMouseDown={e => { e.preventDefault(); ubicarme(); }}
+              onMouseDown={e => { e.preventDefault(); ubicarme(false); }}
               title="Usar mi ubicación actual"
               style={{
                 background:"none", border:"none", cursor: geolocando ? "wait" : "pointer",
                 padding:"4px 6px", color: geolocando ? "#C8BEA8" : "#9a9080",
-                display:"flex", alignItems:"center", transition:"color .2s",
+                display:"flex", alignItems:"center", transition:"color .2s", flexShrink:0,
               }}
             >
               {geolocando
@@ -1096,10 +1132,10 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled }) {
         </div>
       </div>
 
-      {/* Dropdown */}
       {mostrarDropdown && (
         <div style={S.dropdown}>
-          {/* Usar mi ubicación */}
+
+          {/* GPS */}
           {dotStyle === "origen" && !value && (
             <button className="drop-item" onMouseDown={e => { e.preventDefault(); ubicarme(); setAbierto(false); }}
               style={{ borderBottom:"1px solid #F0EBE0" }}>
@@ -1113,7 +1149,34 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled }) {
             </button>
           )}
 
-          {/* Puntos frecuentes */}
+          {/* Historial de direcciones usadas */}
+          {histFiltrado.length > 0 && (
+            <>
+              <div style={S.dropHeader}>Usadas recientemente</div>
+              {histFiltrado.map((h, i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center" }}>
+                  <button className="drop-item" style={{ flex:1 }} onMouseDown={() => seleccionar(h)}>
+                    <div style={{ ...S.dropIcon, background:"#F0EBE0" }}>🕐</div>
+                    <div style={{ flex:1, textAlign:"left" }}>
+                      <div style={{ fontSize:"0.85rem", fontWeight:600, color:"#1a1611" }}>{h.label}</div>
+                      {h.sub && <div style={{ fontSize:"0.72rem", color:"#9a9080", marginTop:1 }}>{h.sub}</div>}
+                    </div>
+                  </button>
+                  <button
+                    onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onEliminarHistorial?.(h.label); }}
+                    title="Eliminar del historial"
+                    style={{
+                      background:"none", border:"none", cursor:"pointer",
+                      padding:"8px 14px 8px 4px", color:"#C8BEA8",
+                      fontSize:"1rem", flexShrink:0, lineHeight:1,
+                    }}
+                  >×</button>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Puntos frecuentes fijos */}
           {frecuentes.length > 0 && (
             <>
               <div style={S.dropHeader}>Rutas frecuentes</div>
@@ -1145,7 +1208,6 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled }) {
             </>
           )}
 
-          {/* Buscando */}
           {buscando && (
             <div style={{ padding:"12px 16px", display:"flex", alignItems:"center", gap:8, color:"#9a9080", fontSize:"0.8rem" }}>
               <span className="btn-spinner" style={{ width:13, height:13, borderWidth:1.5, borderTopColor:"#9a9080", borderColor:"#D4CBB8" }}/>
@@ -1153,8 +1215,7 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled }) {
             </div>
           )}
 
-          {/* Sin resultados */}
-          {!buscando && query.length >= 3 && resultados.length === 0 && frecuentes.length === 0 && (
+          {!buscando && query.length >= 3 && resultados.length === 0 && frecuentes.length === 0 && histFiltrado.length === 0 && (
             <div style={S.dropAviso}>
               <span>🔍</span>
               <span>Sin resultados para "{query}"</span>
@@ -1165,7 +1226,6 @@ function LugarInput({ placeholder, value, onChange, dotStyle, disabled }) {
     </div>
   );
 }
-
 
 // ── FrasesRotativas ───────────────────────────────────────────────────────────
 const FRASES = [
@@ -1180,18 +1240,15 @@ const FRASES = [
 ];
 
 function FrasesRotativas() {
-  const [idx,     setIdx]     = useState(0);
-  const [estado,  setEstado]  = useState("visible"); // "visible" | "saliendo" | "entrando"
+  const [idx,    setIdx]    = useState(0);
+  const [estado, setEstado] = useState("visible");
 
   useEffect(() => {
     const ciclo = setInterval(() => {
-      // 1. Inicia salida hacia la izquierda
       setEstado("saliendo");
       setTimeout(() => {
-        // 2. Cambia el texto mientras está invisible
         setIdx(i => (i + 1) % FRASES.length);
         setEstado("entrando");
-        // 3. Vuelve a visible
         setTimeout(() => setEstado("visible"), 30);
       }, 380);
     }, 3200);
@@ -1199,28 +1256,15 @@ function FrasesRotativas() {
   }, []);
 
   const frase = FRASES[idx];
-
-  const transformMap = {
-    visible:  "translateX(0)    scale(1)",
-    saliendo: "translateX(-28px) scale(0.94)",
-    entrando: "translateX(22px)  scale(0.96)",
-  };
-  const opacityMap = { visible:1, saliendo:0, entrando:0 };
+  const transformMap = { visible:"translateX(0) scale(1)", saliendo:"translateX(-28px) scale(0.94)", entrando:"translateX(22px) scale(0.96)" };
+  const opacityMap   = { visible:1, saliendo:0, entrando:0 };
 
   return (
-    <div style={{
-      overflow:   "hidden",
-      margin:     "8px 0 12px",
-      height:     30,
-      display:    "flex",
-      alignItems: "center",
-    }}>
+    <div style={{ overflow:"hidden", margin:"8px 0 12px", height:30, display:"flex", alignItems:"center" }}>
       <div style={{
-        display:    "flex",
-        alignItems: "center",
-        gap:        7,
-        transform:  transformMap[estado],
-        opacity:    opacityMap[estado],
+        display:"flex", alignItems:"center", gap:7,
+        transform: transformMap[estado],
+        opacity:   opacityMap[estado],
         transition: estado === "saliendo"
           ? "transform 0.35s cubic-bezier(.4,0,.6,1), opacity 0.28s ease"
           : estado === "visible"
@@ -1228,22 +1272,13 @@ function FrasesRotativas() {
           : "none",
         willChange: "transform, opacity",
       }}>
-        {/* Píldora de acento */}
         <span style={{
-          display:         "inline-flex",
-          alignItems:      "center",
-          gap:             5,
-          background:      "#1a1611",
-          color:           "#F5EDD8",
-          borderRadius:    99,
-          padding:         "3px 11px 3px 7px",
-          fontSize:        "0.78rem",
-          fontWeight:      700,
-          letterSpacing:   "-0.01em",
-          whiteSpace:      "nowrap",
-          fontFamily:      "'DM Sans', sans-serif",
+          display:"inline-flex", alignItems:"center", gap:5,
+          background:"#1a1611", color:"#F5EDD8", borderRadius:99,
+          padding:"3px 11px 3px 7px", fontSize:"0.78rem", fontWeight:700,
+          letterSpacing:"-0.01em", whiteSpace:"nowrap", fontFamily:"'DM Sans', sans-serif",
         }}>
-          <span style={{ fontSize: "0.82rem", lineHeight: 1 }}>{frase.emoji}</span>
+          <span style={{ fontSize:"0.82rem", lineHeight:1 }}>{frase.emoji}</span>
           {frase.texto}
         </span>
       </div>
@@ -1315,67 +1350,18 @@ const S = {
   saludoRow:   { display:"flex", justifyContent:"space-between", alignItems:"flex-start", paddingTop:"clamp(1.25rem,5vw,2.5rem)", paddingBottom:"1.25rem" },
   saludoSub:   { fontSize:"0.85rem", color:"#9a9080", marginBottom:4, fontWeight:500 },
   saludoTitle: { fontFamily:"'Syne', sans-serif", fontSize:"clamp(1.5rem,6vw,2.2rem)", fontWeight:800, color:"#1a1611", lineHeight:1.12 },
-
-  // Caja individual para cada campo de ruta
-  searchBoxSingle: {
-    background:"#EDE5D0", border:"1px solid #D4CBB8", borderRadius:16,
-    boxShadow:"0 2px 12px rgba(26,22,17,.06)",
-    transition:"border-color .2s, box-shadow .2s",
-  },
-
-  // Separador con botón swap
-  arrowSep: {
-    display:"flex", alignItems:"center", justifyContent:"center",
-    height:22, position:"relative",
-  },
-
-  swapBtn: {
-    width:30, height:30, borderRadius:"50%",
-    background:"#fff", border:"1.5px solid #D4CBB8",
-    display:"flex", alignItems:"center", justifyContent:"center",
-    cursor:"pointer", color:"#9a9080",
-    transition:"all .2s", boxShadow:"0 1px 6px rgba(26,22,17,.08)",
-    zIndex:1,
-  },
-
-  // Badge distancia
-  distBadge: {
-    display:"flex", alignItems:"center", gap:6,
-    background:"#F0EBE0", border:"1px solid #D4CBB8",
-    borderRadius:99, padding:"5px 14px",
-    fontSize:"0.75rem", fontWeight:600, color:"#6b5e4e",
-    marginTop:8, alignSelf:"flex-start",
-  },
-
-  // Dropdown autocomplete
-  dropdown: {
-    position:"absolute", top:"calc(100% + 6px)", left:0, right:0,
-    background:"#fff", border:"1px solid #E0D8CC",
-    borderRadius:14, boxShadow:"0 8px 32px rgba(26,22,17,.14)",
-    zIndex:9999, overflow:"visible",
-  },
-  dropHeader: {
-    padding:"8px 16px 4px",
-    fontSize:"0.67rem", fontWeight:700, color:"#C8BEA8",
-    textTransform:"uppercase", letterSpacing:"0.07em",
-  },
-  dropIcon: {
-    width:34, height:34, borderRadius:10,
-    background:"#F0EBE0", display:"flex", alignItems:"center",
-    justifyContent:"center", fontSize:"1rem", flexShrink:0,
-  },
-  dropAviso: {
-    display:"flex", alignItems:"flex-start", gap:8,
-    padding:"10px 16px", margin:"4px 8px 8px",
-    background:"#FDF9F3", border:"1px solid #E8E0D0",
-    borderRadius:10, fontSize:"0.72rem", color:"#9a9080", lineHeight:1.5,
-  },
-
+  searchBoxSingle: { background:"#EDE5D0", border:"1px solid #D4CBB8", borderRadius:16, boxShadow:"0 2px 12px rgba(26,22,17,.06)", transition:"border-color .2s, box-shadow .2s" },
+  arrowSep:    { display:"flex", alignItems:"center", justifyContent:"center", height:22, position:"relative" },
+  swapBtn:     { width:30, height:30, borderRadius:"50%", background:"#fff", border:"1.5px solid #D4CBB8", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"#9a9080", transition:"all .2s", boxShadow:"0 1px 6px rgba(26,22,17,.08)", zIndex:1 },
+  distBadge:   { display:"flex", alignItems:"center", gap:6, background:"#F0EBE0", border:"1px solid #D4CBB8", borderRadius:99, padding:"5px 14px", fontSize:"0.75rem", fontWeight:600, color:"#6b5e4e", marginTop:8, alignSelf:"flex-start" },
+  dropdown:    { position:"absolute", top:"calc(100% + 6px)", left:0, right:0, background:"#fff", border:"1px solid #E0D8CC", borderRadius:14, boxShadow:"0 8px 32px rgba(26,22,17,.14)", zIndex:9999, overflow:"visible" },
+  dropHeader:  { padding:"8px 16px 4px", fontSize:"0.67rem", fontWeight:700, color:"#C8BEA8", textTransform:"uppercase", letterSpacing:"0.07em" },
+  dropIcon:    { width:34, height:34, borderRadius:10, background:"#F0EBE0", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1rem", flexShrink:0 },
+  dropAviso:   { display:"flex", alignItems:"flex-start", gap:8, padding:"10px 16px", margin:"4px 8px 8px", background:"#FDF9F3", border:"1px solid #E8E0D0", borderRadius:10, fontSize:"0.72rem", color:"#9a9080", lineHeight:1.5 },
   searchRow:   { display:"flex", alignItems:"center", gap:14, padding:"15px 18px" },
   select:      { flex:1, background:"transparent", border:"none", outline:"none", fontSize:"0.95rem", fontFamily:"'DM Sans', sans-serif", cursor:"pointer", fontWeight:500 },
   dotOrigen:   { width:10, height:10, borderRadius:"50%", border:"2.5px solid #1a1611", flexShrink:0 },
   dotDestino:  { width:10, height:10, borderRadius:2, background:"#1a1611", flexShrink:0 },
-
   pill:        { background:"#EDE5D0", border:"1px solid #D4CBB8", borderRadius:14, padding:"11px 16px", display:"flex", flexDirection:"column", gap:3, position:"relative", boxShadow:"0 2px 10px rgba(26,22,17,.05)" },
   rutaIcoSmall:{ width:38, height:38, borderRadius:10, background:"#E8E0D0", border:"1px solid #D4CBB8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.1rem", flexShrink:0 },
   topBar:      { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"1.5rem 0 1rem" },

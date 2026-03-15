@@ -117,203 +117,230 @@ const ESTADO_CFG = {
 
 // ─── CSS Global ───────────────────────────────────────────────
 const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500;600;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
-  .rm{font-family:'DM Sans',sans-serif;background:#EDE5D0;min-height:100vh;color:#2d2820}
+  .rm{font-family:'DM Sans',sans-serif;background:#f7f5f2;min-height:100vh;color:#1a1611}
 
-  .rm-hdr{background:#2d2820;padding:18px 28px;display:flex;align-items:center;justify-content:space-between}
-  .rm-hdr h1{font-family:'Playfair Display',serif;font-size:1.35rem;color:#EDE5D0;font-weight:500}
-  .rm-hdr small{font-size:.72rem;color:#9a9080;display:block;margin-top:2px}
-  .rm-live{background:#22c55e18;border:1px solid #22c55e40;color:#22c55e;font-size:.68rem;padding:4px 12px;border-radius:20px;font-weight:700;letter-spacing:.08em}
+  /* ── Header oscuro (igual al wireframe) ── */
+  .rm-hdr{background:#1a1611;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+  .rm-hdr h1{font-family:'DM Sans',sans-serif;font-size:1.1rem;color:#fff;font-weight:700;display:flex;align-items:center;gap:8px}
+  .rm-hdr small{font-size:.68rem;color:#9a8e80;display:block;margin-top:1px;font-weight:400}
+  .rm-live{background:#16a34a;border:none;color:#fff;font-size:.65rem;padding:4px 12px;border-radius:99px;font-weight:700;letter-spacing:.04em;display:flex;align-items:center;gap:4px}
 
-  .rm-tabs{background:#2d2820;padding:0 28px;display:flex;gap:2px;border-bottom:1px solid #ffffff12;overflow-x:auto}
-  .rm-tab{padding:11px 16px;border:none;background:transparent;color:#9a9080;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;flex-shrink:0}
-  .rm-tab.on{color:#EDE5D0;border-bottom-color:#22c55e}
-  .rm-tab:hover:not(.on){color:#D4CBB8}
+  /* ── Tabs limpios sobre fondo blanco ── */
+  .rm-tabs{background:#fff;padding:0 24px;display:flex;gap:0;border-bottom:1.5px solid #ede8e0;overflow-x:auto}
+  .rm-tab{padding:13px 20px;border:none;background:transparent;color:#9a8e80;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;flex-shrink:0}
+  .rm-tab.on{color:#1a1611;border-bottom-color:#1a1611}
+  .rm-tab:hover:not(.on){color:#4a3f35}
 
-  .rm-main{padding:24px 28px;max-width:1180px;margin:0 auto}
+  /* ── Main ── */
+  .rm-main{padding:20px 24px;max-width:1100px;margin:0 auto}
 
-  .rm-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px}
-  .rm-kpi{background:#f2f2f2;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:3px}
-  .rm-kpi-num{font-size:1.75rem;font-weight:700;color:#1a1a1a;font-family:'Playfair Display',serif;line-height:1;letter-spacing:-.02em}
-  .rm-kpi-num.accent-orange{color:#c2650a}
-  .rm-kpi-num.accent-green{color:#1a7a3c}
-  .rm-kpi-num.kpi-money{font-size:1.35rem}
-  .rm-kpi-label{font-size:.72rem;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.07em;margin-top:6px}
-  .rm-kpi-sub{font-size:.67rem;color:#aaa;font-weight:400}
+  /* ── KPIs ── */
+  .rm-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+  .rm-kpi{background:#fff;border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:3px;border:1px solid #ede8e0}
+  .rm-kpi-num{font-size:1.75rem;font-weight:700;color:#1a1611;font-family:'Playfair Display',serif;line-height:1;letter-spacing:-.03em}
+  .rm-kpi-num.accent-orange{color:#d97706}
+  .rm-kpi-num.accent-green{color:#16a34a}
+  .rm-kpi-num.kpi-money{font-size:1.25rem}
+  .rm-kpi-label{font-size:.65rem;font-weight:700;color:#9a8e80;text-transform:uppercase;letter-spacing:.08em;margin-top:8px}
+  .rm-kpi-sub{font-size:.62rem;color:#c0b8b0}
 
-  .rm-cal-wrap{background:#fff;border-radius:18px;border:1.5px solid #D4CBB8;overflow:hidden;box-shadow:0 2px 16px rgba(26,22,17,.06)}
-  .rm-cal-hdr{background:#2d2820;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
-  .rm-cal-mes{font-family:'Playfair Display',serif;font-size:1.2rem;color:#EDE5D0;font-weight:500}
-  .rm-cal-nav{background:transparent;border:1px solid #ffffff20;color:#D4CBB8;border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .2s}
-  .rm-cal-nav:hover{background:#ffffff15;color:#EDE5D0}
+  /* ── Calendario ── */
+  .rm-cal-wrap{background:#fff;border-radius:16px;border:1px solid #ede8e0;overflow:hidden}
+  .rm-cal-hdr{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f2ede6}
+  .rm-cal-mes{font-family:'DM Sans',sans-serif;font-size:1rem;color:#1a1611;font-weight:700}
+  .rm-cal-nav{background:#f7f5f2;border:1px solid #ede8e0;color:#6b5e4e;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;transition:all .15s}
+  .rm-cal-nav:hover{background:#ede8e0;color:#1a1611}
   .rm-cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
-  .rm-cal-dow{padding:10px 0;text-align:center;font-size:.68rem;font-weight:700;color:#9a9080;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #EDE5D0}
-  .rm-cal-day{min-height:90px;padding:8px;border-right:1px solid #EDE5D0;border-bottom:1px solid #EDE5D0;position:relative;transition:background .15s;vertical-align:top}
+  .rm-cal-dow{padding:8px 0;text-align:center;font-size:.62rem;font-weight:700;color:#c0b8b0;text-transform:uppercase;letter-spacing:.06em;background:#faf8f5}
+  .rm-cal-day{min-height:76px;padding:7px;border-right:1px solid #f2ede6;border-bottom:1px solid #f2ede6;position:relative;transition:background .12s}
   .rm-cal-day:nth-child(7n){border-right:none}
   .rm-cal-day.vacio{background:#faf8f5}
-  .rm-cal-day.bloqueado{background:#fef2f2;cursor:not-allowed}
-  .rm-cal-day.bloqueado .rm-dia-num{text-decoration:line-through;color:#dc2626}
-  .rm-cal-day.hoy .rm-dia-num{background:#2d2820;color:#EDE5D0;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+  .rm-cal-day.bloqueado{background:#fff0f0;cursor:not-allowed}
+  .rm-cal-day.bloqueado .rm-dia-num{text-decoration:line-through;color:#f87171}
+  .rm-cal-day.hoy .rm-dia-num{background:#1a1611;color:#fff;border-radius:99px;width:24px;height:24px;display:flex;align-items:center;justify-content:center}
   .rm-cal-day.tiene-viajes{cursor:pointer}
-  .rm-cal-day.tiene-viajes:hover{background:#f5f0e8}
-  .rm-cal-day.tiene-viajes:active{background:#ede5d0}
-  .rm-dia-num{font-size:.8rem;font-weight:600;color:#2d2820;margin-bottom:5px;width:24px;height:24px;display:flex;align-items:center;justify-content:center}
-  .rm-dia-num.otro-mes{color:#C8BEA8}
+  .rm-cal-day.tiene-viajes:hover{background:#faf5ee}
+  .rm-dia-num{font-size:.75rem;font-weight:600;color:#1a1611;margin-bottom:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+  .rm-dia-num.otro-mes{color:#d4cfc8}
   .rm-dia-dots{display:flex;flex-direction:column;gap:3px}
-  .rm-dia-dot{display:flex;align-items:center;gap:4px;padding:2px 5px;border-radius:5px;font-size:.62rem;font-weight:600;white-space:nowrap;overflow:hidden}
-  .rm-dia-dot.compartido{background:#dbeafe;color:#1e40af}
-  .rm-dia-dot.privado{background:#fff3e0;color:#b45309}
-  .rm-dia-dot.bloq-tag{background:#fecaca;color:#991b1b;font-size:.58rem}
-  .rm-dia-total{margin-top:4px;font-size:.62rem;color:#9a9080;font-weight:500}
+  .rm-dia-dot{display:flex;align-items:center;gap:3px;padding:1px 6px;border-radius:99px;font-size:.55rem;font-weight:700;white-space:nowrap;overflow:hidden}
+  .rm-dia-dot.compartido{background:#eff6ff;color:#2563eb}
+  .rm-dia-dot.privado{background:#fff7ed;color:#c2410c}
+  .rm-dia-dot.bloq-tag{background:#fee2e2;color:#b91c1c}
+  .rm-dia-total{margin-top:2px;font-size:.55rem;color:#b0a898;font-weight:600}
 
-  .rm-ov{position:fixed;inset:0;background:rgba(26,22,17,.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
-  .rm-modal{background:#fff;border-radius:20px;width:100%;max-width:640px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.28)}
-  .rm-modal-hdr{background:#2d2820;padding:20px 24px;border-radius:20px 20px 0 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1}
-  .rm-modal-titulo{font-family:'Playfair Display',serif;font-size:1.1rem;color:#EDE5D0;font-weight:500}
-  .rm-modal-sub{font-size:.75rem;color:#9a9080;margin-top:2px}
-  .rm-modal-close{background:transparent;border:1px solid #ffffff20;color:#9a9080;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .2s}
-  .rm-modal-close:hover{background:#ffffff15;color:#EDE5D0}
-  .rm-modal-body{padding:20px 24px}
-  .rm-modal-seccion{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9a9080;margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid #EDE5D0}
+  /* ── Modal ── */
+  .rm-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+  .rm-modal{background:#fff;border-radius:20px;width:100%;max-width:600px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+  .rm-modal-hdr{background:#1a1611;padding:18px 22px;border-radius:20px 20px 0 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1}
+  .rm-modal-titulo{font-family:'DM Sans',sans-serif;font-size:1rem;color:#fff;font-weight:700}
+  .rm-modal-sub{font-size:.7rem;color:#9a8e80;margin-top:2px}
+  .rm-modal-close{background:#ffffff18;border:none;color:#fff;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;transition:all .15s}
+  .rm-modal-close:hover{background:#ffffff30}
+  .rm-modal-body{padding:18px 22px}
+  .rm-modal-seccion{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#b0a898;margin:14px 0 10px;padding-bottom:5px;border-bottom:1px solid #f2ede6}
   .rm-modal-seccion:first-child{margin-top:0}
-  .rm-viaje-card{background:#faf8f5;border:1.5px solid #E8E0D0;border-radius:12px;padding:14px 16px;margin-bottom:10px}
-  .rm-viaje-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-  .rm-viaje-card-ruta{font-weight:700;font-size:.9rem;color:#2d2820}
-  .rm-viaje-card-meta{font-size:.72rem;color:#9a9080;margin-top:2px}
-  .rm-viaje-card-r{text-align:right}
-  .rm-pasajeros-list{display:flex;flex-direction:column;gap:6px}
-  .rm-pax-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#fff;border-radius:8px;border:1px solid #E8E0D0}
+  .rm-viaje-card{background:#faf8f5;border:1px solid #ede8e0;border-radius:12px;padding:12px 14px;margin-bottom:8px}
+  .rm-viaje-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .rm-viaje-card-ruta{font-weight:700;font-size:.85rem;color:#1a1611}
+  .rm-viaje-card-meta{font-size:.68rem;color:#b0a898;margin-top:2px}
+  .rm-pasajeros-list{display:flex;flex-direction:column;gap:5px}
+  .rm-pax-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#fff;border-radius:10px;border:1px solid #f2ede6}
   .rm-pax-info{flex:1;min-width:0}
-  .rm-pax-name{font-size:.82rem;font-weight:600;color:#2d2820;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .rm-pax-sub{font-size:.7rem;color:#9a9080;margin-top:1px}
-  .rm-pax-actions{display:flex;gap:5px;flex-shrink:0}
-  .rm-modal-empty{text-align:center;padding:32px 20px;color:#9a9080;font-size:.85rem}
+  .rm-pax-name{font-size:.8rem;font-weight:600;color:#1a1611;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rm-pax-sub{font-size:.65rem;color:#b0a898;margin-top:1px}
+  .rm-pax-actions{display:flex;gap:4px;flex-shrink:0}
+  .rm-modal-empty{text-align:center;padding:28px 20px;color:#b0a898;font-size:.82rem}
 
-  .rm-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
-  .rm-stat{background:#fff;border-radius:14px;padding:18px 20px;border:1.5px solid #D4CBB8;position:relative;overflow:hidden}
-  .rm-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-  .rm-stat.s1::before{background:#3b82f6}.rm-stat.s2::before{background:#f07700}
-  .rm-stat.s3::before{background:#22c55e}.rm-stat.s4::before{background:#7c3aed}
-  .rm-sval-lg{font-size:1.9rem;font-weight:700;color:#2d2820;font-family:'Playfair Display',serif;line-height:1}
+  /* ── Sección header en tabs ── */
+  .rm-sec-hdr{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#b0a898;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #ede8e0}
 
-  .rm-filters{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
-  .rm-fbtn{padding:7px 16px;border-radius:20px;border:1.5px solid #D4CBB8;background:transparent;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:500;cursor:pointer;color:#9a9080;transition:all .2s}
-  .rm-fbtn.on{background:#2d2820;border-color:#2d2820;color:#EDE5D0}
-  .rm-fbtn:hover:not(.on){border-color:#9a9080;color:#2d2820}
-  .rm-date{padding:7px 14px;border-radius:20px;border:1.5px solid #D4CBB8;background:transparent;font-family:'DM Sans',sans-serif;font-size:.8rem;color:#2d2820}
+  /* ── Tarjetas de reserva (por pasajero, como wireframe) ── */
+  .rm-res-card{background:#fff;border-radius:14px;border:1px solid #ede8e0;padding:14px 16px;transition:box-shadow .15s,transform .15s;cursor:pointer}
+  .rm-res-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06);transform:translateY(-1px)}
+  .rm-res-card.cancelado-card{background:#fffafa;border-color:#ffd6d6;opacity:.7}
+  .rm-res-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+  .rm-res-nombre{font-size:.9rem;font-weight:700;color:#1a1611}
+  .rm-res-badge{font-size:.62rem;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap}
+  .rm-res-badge.compartido{background:#eff6ff;color:#2563eb}
+  .rm-res-badge.privado{background:#fff7ed;color:#c2410c}
+  .rm-res-badge.cancelado{background:#f2f2f2;color:#9a8e80}
+  .rm-res-ruta{font-size:.78rem;color:#6b5e4e;margin-bottom:6px;font-weight:500}
+  .rm-res-meta{display:flex;align-items:center;gap:12px;font-size:.75rem;color:#9a8e80}
+  .rm-res-meta span{display:flex;align-items:center;gap:3px;font-weight:500}
+  .rm-res-actions{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #f2ede6;flex-wrap:wrap}
 
-  .rm-cards{display:flex;flex-direction:column;gap:14px}
-  .rm-card{background:#fff;border-radius:16px;border:1.5px solid #D4CBB8;overflow:hidden;transition:box-shadow .2s}
-  .rm-card:hover{box-shadow:0 4px 18px rgba(26,22,17,.1)}
-  .rm-card.cancelado-card{background:#fef9f9;border-color:#fca5a580}
-  .rm-card-hd{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border-bottom:1px solid transparent;transition:border-color .2s}
-  .rm-card.open .rm-card-hd{border-bottom-color:#EDE5D0}
-  .rm-card-l{display:flex;align-items:center;gap:12px}
-  .rm-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0}
-  .rm-ruta{font-size:.95rem;font-weight:700;color:#2d2820}
-  .rm-meta{font-size:.75rem;color:#9a9080;margin-top:2px}
-  .rm-card-r{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  /* ── Filtros ── */
+  .rm-filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+  .rm-fbtn{padding:6px 16px;border-radius:99px;border:1.5px solid #ede8e0;background:#fff;font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer;color:#9a8e80;transition:all .15s}
+  .rm-fbtn.on{background:#1a1611;border-color:#1a1611;color:#fff}
+  .rm-fbtn:hover:not(.on){border-color:#9a8e80;color:#1a1611}
+  .rm-date{padding:6px 14px;border-radius:99px;border:1.5px solid #ede8e0;background:#fff;font-family:'DM Sans',sans-serif;font-size:.75rem;color:#1a1611}
+
+  /* ── Botones de acción ── */
+  .rm-btn{border:1.5px solid #ede8e0;background:#fff;border-radius:99px;padding:4px 12px;font-size:.7rem;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;transition:all .12s;color:#6b5e4e}
+  .rm-btn:hover{background:#f7f5f2;border-color:#c0b8b0}
+  .rm-btn.green{border-color:#bbf7d0;color:#15803d;background:#f0fdf4}
+  .rm-btn.green:hover{background:#dcfce7}
+  .rm-btn.red{border-color:#fecaca;color:#b91c1c;background:#fff5f5}
+  .rm-btn:disabled{opacity:.4;cursor:not-allowed}
+  .rm-btn-cobrar{background:#f97316;color:#fff;border:none;border-radius:99px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:.72rem;font-weight:700;cursor:pointer;transition:all .15s}
+  .rm-btn-cobrar:hover{background:#ea6c0a}
+  .rm-btn-eliminar{background:transparent;color:#ef4444;border:1.5px solid #fecaca;border-radius:99px;padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;transition:all .15s}
+  .rm-btn-eliminar:hover{background:#fff5f5}
+  .rm-btn-wa-lg{background:#16a34a;color:#fff;border:none;border-radius:99px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:.72rem;font-weight:700;cursor:pointer;transition:all .15s}
+  .rm-btn-wa-lg:hover{background:#15803d}
+  .rm-btn-ghost{border:1.5px solid #ede8e0;background:#fff;border-radius:99px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;color:#9a8e80;transition:all .15s}
+  .rm-btn-ghost:hover{border-color:#9a8e80;color:#1a1611}
+
+  /* ── Formularios ── */
+  .rm-form-wrap{background:#fff;border-radius:16px;border:1px solid #ede8e0;padding:24px}
+  .rm-form-title{font-family:'DM Sans',sans-serif;font-size:1rem;color:#1a1611;margin-bottom:4px;font-weight:700}
+  .rm-form-sub{font-size:.78rem;color:#b0a898;margin-bottom:20px;line-height:1.5}
+  .rm-form-section{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#b0a898;margin:18px 0 10px;padding-bottom:5px;border-bottom:1px solid #f2ede6}
+  .rm-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .rm-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .rm-col2{grid-column:1/-1}
+  .rm-field{display:flex;flex-direction:column;gap:4px}
+  .rm-field label{font-size:.65rem;font-weight:700;color:#b0a898;text-transform:uppercase;letter-spacing:.06em}
+  .rm-field label span{color:#ef4444}
+  .rm-field input,.rm-field select,.rm-field textarea{padding:9px 12px;border-radius:10px;border:1.5px solid #ede8e0;font-family:'DM Sans',sans-serif;font-size:.83rem;color:#1a1611;background:#faf8f5;transition:border-color .12s}
+  .rm-field input:focus,.rm-field select:focus,.rm-field textarea:focus{outline:none;border-color:#1a1611;background:#fff}
+  .rm-field input.err,.rm-field select.err{border-color:#ef4444}
+  .rm-field-hint{font-size:.65rem;color:#b0a898;margin-top:2px}
+  .rm-form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid #f2ede6}
+  .rm-btn-primary{background:#1a1611;color:#fff;border:none;border-radius:99px;padding:10px 26px;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s}
+  .rm-btn-primary:hover:not(:disabled){background:#2d2820;transform:translateY(-1px)}
+  .rm-btn-primary:disabled{opacity:.4;cursor:not-allowed}
+  .rm-preview{background:#f7f5f2;border-radius:12px;padding:14px 16px;margin-top:16px;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .rm-preview-item{text-align:center}
+  .rm-preview-lbl{font-size:.6rem;color:#b0a898;text-transform:uppercase;letter-spacing:.07em;font-weight:700}
+  .rm-preview-val{font-size:.9rem;font-weight:700;color:#1a1611;margin-top:2px}
+
+  /* ── Toast / Dialog / Utils ── */
+  .rm-toast{position:fixed;bottom:20px;right:20px;background:#1a1611;color:#fff;padding:11px 20px;border-radius:99px;font-size:.8rem;font-weight:600;z-index:999;animation:tin .22s ease;box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:300px}
+  @keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .rm-dlg{background:#fff;border-radius:20px;padding:24px;max-width:400px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.15)}
+  .rm-dlg h3{font-family:'DM Sans',sans-serif;font-size:1rem;color:#1a1611;margin-bottom:8px;font-weight:700}
+  .rm-dlg p{font-size:.8rem;color:#9a8e80;line-height:1.6;margin-bottom:18px}
+  .rm-dlg-btns{display:flex;gap:8px;justify-content:flex-end}
+  .rm-btn-confirm{background:#1a1611;color:#fff;border:none;border-radius:99px;padding:8px 20px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer}
+  .rm-btn-confirm:hover{background:#2d2820}
+  .rm-btn-danger{background:#ef4444;color:#fff;border:none;border-radius:99px;padding:8px 20px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer}
+  .rm-btn-danger:hover{background:#dc2626}
+  .rm-loading{text-align:center;padding:50px 20px;color:#b0a898}
+  .rm-spinner{width:26px;height:26px;border:2.5px solid #ede8e0;border-top-color:#1a1611;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .rm-empty{text-align:center;padding:40px 20px;color:#b0a898;font-size:.82rem}
+  .rm-success{text-align:center;padding:36px 20px}
+  .rm-success-icon{font-size:2.5rem;margin-bottom:12px}
+  .rm-success h3{font-size:1.05rem;color:#1a1611;margin-bottom:6px;font-weight:700}
+  .rm-success p{font-size:.8rem;color:#9a8e80;margin-bottom:18px}
+
+  /* ── Tarjetas viejas (compatibilidad) ── */
+  .rm-cards{display:flex;flex-direction:column;gap:8px}
+  .rm-card{background:#fff;border-radius:14px;border:1px solid #ede8e0;overflow:hidden}
+  .rm-card.cancelado-card{opacity:.65}
+  .rm-card-hd{padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border-bottom:1px solid transparent}
+  .rm-card.open .rm-card-hd{border-bottom-color:#f2ede6}
+  .rm-card-l{display:flex;align-items:center;gap:10px}
+  .rm-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+  .rm-ruta{font-size:.88rem;font-weight:700;color:#1a1611}
+  .rm-meta{font-size:.7rem;color:#b0a898;margin-top:2px}
+  .rm-card-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .rm-prog{text-align:right}
-  .rm-prog-lbl{font-size:.7rem;color:#9a9080;margin-bottom:3px}
-  .rm-prog-bar{width:88px;height:5px;background:#EDE5D0;border-radius:10px;overflow:hidden}
-  .rm-prog-fill{height:100%;border-radius:10px;transition:width .4s}
-  .rm-estado{font-size:.7rem;font-weight:700;padding:4px 11px;border-radius:20px;white-space:nowrap;letter-spacing:.03em}
-  .rm-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px}
-  .rm-btn-cobrar{background:#2d2820;color:#EDE5D0;border:none;border-radius:9px;padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s;animation:pulse 2s infinite}
-  .rm-btn-cobrar:hover{background:#3d3829;transform:translateY(-1px)}
-  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(240,119,0,.35)}50%{box-shadow:0 0 0 7px rgba(240,119,0,0)}}
-  .rm-btn-eliminar{background:transparent;color:#dc2626;border:1.5px solid #fca5a5;border-radius:9px;padding:7px 13px;font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s;white-space:nowrap}
-  .rm-btn-eliminar:hover{background:#fef2f2;border-color:#dc2626}
-  .rm-chevron{color:#9a9080;font-size:.65rem;transition:transform .2s;margin-left:4px}
+  .rm-prog-lbl{font-size:.62rem;color:#b0a898;margin-bottom:2px}
+  .rm-prog-bar{width:72px;height:3px;background:#f2ede6;border-radius:99px;overflow:hidden}
+  .rm-prog-fill{height:100%;border-radius:99px;transition:width .4s}
+  .rm-estado{font-size:.62rem;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap}
+  .rm-dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:4px}
+  .rm-chevron{color:#c0b8b0;font-size:.55rem;transition:transform .15s;margin-left:3px}
   .rm-card.open .rm-chevron{transform:rotate(180deg)}
-
-  .rm-detail{padding:20px}
+  .rm-detail{padding:14px 16px}
   .rm-table{width:100%;border-collapse:collapse}
-  .rm-table th{text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#9a9080;font-weight:700;padding:7px 10px;border-bottom:1.5px solid #EDE5D0}
-  .rm-table td{padding:10px 10px;font-size:.82rem;color:#2d2820;border-bottom:1px solid #EDE5D0;vertical-align:middle}
+  .rm-table th{text-align:left;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:#b0a898;font-weight:700;padding:5px 8px;border-bottom:1px solid #f2ede6}
+  .rm-table td{padding:9px 8px;font-size:.78rem;color:#1a1611;border-bottom:1px solid #f7f5f2;vertical-align:middle}
   .rm-table tr:last-child td{border-bottom:none}
   .rm-table tr:hover td{background:#faf8f5}
   .rm-pax-name{font-weight:600}
-  .rm-pax-sub2{font-size:.7rem;color:#9a9080;margin-top:1px}
-  .rm-act{display:flex;gap:5px;flex-wrap:wrap}
-  .rm-btn{border:1.5px solid #D4CBB8;background:transparent;border-radius:7px;padding:4px 10px;font-size:.72rem;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;transition:all .15s;color:#2d2820}
-  .rm-btn:hover{background:#EDE5D0}
-  .rm-btn.green{border-color:#22c55e50;color:#2d6a4f;background:#e8f5e9}
-  .rm-btn.green:hover{background:#c6e6cc}
-  .rm-btn.red{border-color:#fca5a5;color:#991b1b;background:#fef2f2}
-  .rm-btn:disabled{opacity:.45;cursor:not-allowed}
-  .rm-detail-ft{display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #EDE5D0;align-items:center;flex-wrap:wrap}
-  .rm-detail-ft-info{flex:1;font-size:.78rem;color:#9a9080}
-  .rm-btn-wa-lg{background:#22c55e;color:#fff;border:none;border-radius:9px;padding:9px 14px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s}
-  .rm-btn-wa-lg:hover{background:#16a34a}
-  .rm-btn-ghost{border:1.5px solid #D4CBB8;background:transparent;border-radius:9px;padding:9px 14px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;color:#9a9080;transition:all .2s}
-  .rm-btn-ghost:hover{border-color:#9a9080;color:#2d2820}
-
-  .rm-form-wrap{background:#fff;border-radius:16px;border:1.5px solid #D4CBB8;padding:28px}
-  .rm-form-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:#2d2820;margin-bottom:6px}
-  .rm-form-sub{font-size:.82rem;color:#9a9080;margin-bottom:22px}
-  .rm-form-section{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9a9080;margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid #EDE5D0}
-  .rm-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  .rm-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-  .rm-col2{grid-column:1/-1}
-  .rm-field{display:flex;flex-direction:column;gap:5px}
-  .rm-field label{font-size:.73rem;font-weight:600;color:#9a9080;text-transform:uppercase;letter-spacing:.05em}
-  .rm-field label span{color:#dc2626}
-  .rm-field input,.rm-field select,.rm-field textarea{padding:9px 13px;border-radius:10px;border:1.5px solid #D4CBB8;font-family:'DM Sans',sans-serif;font-size:.85rem;color:#2d2820;background:#faf8f5;transition:border-color .2s}
-  .rm-field input:focus,.rm-field select:focus,.rm-field textarea:focus{outline:none;border-color:#9a9080;background:#fff}
-  .rm-field input.err,.rm-field select.err{border-color:#dc2626}
-  .rm-field-hint{font-size:.7rem;color:#9a9080;margin-top:2px}
-  .rm-form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;padding-top:18px;border-top:1px solid #EDE5D0}
-  .rm-btn-primary{background:#2d2820;color:#EDE5D0;border:none;border-radius:10px;padding:11px 26px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s}
-  .rm-btn-primary:hover:not(:disabled){background:#3d3829}
-  .rm-btn-primary:disabled{opacity:.5;cursor:not-allowed}
-  .rm-preview{background:#EDE5D0;border-radius:12px;padding:16px 20px;margin-top:20px;display:flex;gap:20px;flex-wrap:wrap;align-items:center}
-  .rm-preview-item{text-align:center}
-  .rm-preview-lbl{font-size:.68rem;color:#9a9080;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
-  .rm-preview-val{font-size:1rem;font-weight:700;color:#2d2820;margin-top:2px}
-
-  .rm-toast{position:fixed;bottom:24px;right:24px;background:#2d2820;color:#EDE5D0;padding:13px 20px;border-radius:11px;font-size:.85rem;font-weight:500;z-index:999;animation:tin .3s ease;box-shadow:0 6px 20px rgba(0,0,0,.22);max-width:320px}
-  @keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-  .rm-dlg{background:#fff;border-radius:18px;padding:28px;max-width:460px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.22)}
-  .rm-dlg h3{font-family:'Playfair Display',serif;font-size:1.15rem;color:#2d2820;margin-bottom:10px}
-  .rm-dlg p{font-size:.85rem;color:#9a9080;line-height:1.6;margin-bottom:20px}
-  .rm-dlg-btns{display:flex;gap:10px;justify-content:flex-end}
-  .rm-btn-confirm{background:#2d2820;color:#EDE5D0;border:none;border-radius:9px;padding:9px 20px;font-family:'DM Sans',sans-serif;font-size:.83rem;font-weight:700;cursor:pointer}
-  .rm-btn-confirm:hover{background:#3d3829}
-  .rm-btn-danger{background:#dc2626;color:#fff;border:none;border-radius:9px;padding:9px 20px;font-family:'DM Sans',sans-serif;font-size:.83rem;font-weight:700;cursor:pointer}
-  .rm-loading{text-align:center;padding:60px 20px;color:#9a9080}
-  .rm-spinner{width:30px;height:30px;border:3px solid #D4CBB8;border-top-color:#2d2820;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .rm-empty{text-align:center;padding:50px 20px;color:#9a9080;font-size:.88rem}
-  .rm-success{text-align:center;padding:40px 20px}
-  .rm-success-icon{font-size:3rem;margin-bottom:16px}
-  .rm-success h3{font-family:'Playfair Display',serif;font-size:1.2rem;color:#2d2820;margin-bottom:8px}
-  .rm-success p{font-size:.85rem;color:#9a9080;margin-bottom:20px}
+  .rm-pax-sub2{font-size:.65rem;color:#b0a898;margin-top:1px}
+  .rm-act{display:flex;gap:4px;flex-wrap:wrap}
+  .rm-detail-ft{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #f2ede6;align-items:center;flex-wrap:wrap}
+  .rm-detail-ft-info{flex:1;font-size:.72rem;color:#b0a898}
 
   @media(max-width:768px){
-    .rm-kpi-grid,.rm-stats{grid-template-columns:repeat(2,1fr)}
-    .rm-main{padding:16px}
+    .rm-kpi-grid{grid-template-columns:repeat(2,1fr)}
+    .rm-main{padding:12px}
     .rm-prog{display:none}
     .rm-grid,.rm-grid-3{grid-template-columns:1fr}
     .rm-table th:nth-child(3),.rm-table td:nth-child(3){display:none}
-    .rm-cal-day{min-height:65px;padding:5px}
-    .rm-cal-dow{font-size:.6rem}
+    .rm-cal-day{min-height:55px;padding:4px}
+    .rm-cal-dow{font-size:.55rem}
   }
 `;
 
+
 // ─── BloqueoPanel ─────────────────────────────────────────────
+const TIPO_VIAJE_CFG = {
+  ambos:      { label:"🚌🚐 Ambos",       bg:"#f2f2f2", color:"#6b5e4e" },
+  compartido: { label:"🚌 Compartido",    bg:"#eff6ff", color:"#2563eb" },
+  privado:    { label:"🚐 Van privada",   bg:"#fff7ed", color:"#c2410c" },
+};
+
 function BloqueoPanel({ bloqueos, onBloqueoDia, onBloqueoMes, onEliminar }) {
-  const [tipo,   setTipo]   = useState("dia");
-  const [fecha,  setFecha]  = useState("");
-  const [mes,    setMes]    = useState("");
-  const [anio,   setAnio]   = useState(new Date().getFullYear());
-  const [motivo, setMotivo] = useState("");
+  const [tipo,      setTipo]      = useState("dia");
+  const [fecha,     setFecha]     = useState("");
+  const [mes,       setMes]       = useState("");
+  const [anio,      setAnio]      = useState(new Date().getFullYear());
+  const [motivo,    setMotivo]    = useState("");
+  const [tipoViaje, setTipoViaje] = useState("ambos");
 
   const handleAgregar = () => {
-    if (tipo === "dia") onBloqueoDia(fecha, motivo);
-    else onBloqueoMes(mes, anio, motivo);
-    setFecha(""); setMes(""); setMotivo("");
+    if (tipo === "dia") onBloqueoDia(fecha, motivo, tipoViaje);
+    else onBloqueoMes(mes, anio, motivo, tipoViaje);
+    setFecha(""); setMes(""); setMotivo(""); setTipoViaje("ambos");
   };
 
   return (
@@ -321,10 +348,10 @@ function BloqueoPanel({ bloqueos, onBloqueoDia, onBloqueoMes, onEliminar }) {
       <div className="rm-form-title">🔒 Bloquear fechas</div>
       <div className="rm-form-sub">Los días o meses bloqueados no permitirán nuevas reservas desde la web.</div>
 
-      <div className="rm-form-section">Tipo de bloqueo</div>
-      <div style={{ display:"flex", gap:10, marginBottom:18 }}>
+      <div className="rm-form-section">Período</div>
+      <div style={{ display:"flex", gap:8, marginBottom:18 }}>
         <button className={`rm-fbtn ${tipo==="dia"?"on":""}`} onClick={()=>setTipo("dia")}>📅 Por día</button>
-        <button className={`rm-fbtn ${tipo==="mes"?"on":""}`} onClick={()=>setTipo("mes")}>🗓️ Por mes completo</button>
+        <button className={`rm-fbtn ${tipo==="mes"?"on":""}`} onClick={()=>setTipo("mes")}>🗓️ Por mes</button>
       </div>
 
       {tipo === "dia" ? (
@@ -358,6 +385,15 @@ function BloqueoPanel({ bloqueos, onBloqueoDia, onBloqueoMes, onEliminar }) {
         </div>
       )}
 
+      <div className="rm-form-section" style={{marginTop:18}}>Aplica a</div>
+      <div style={{ display:"flex", gap:8, marginBottom:18 }}>
+        {Object.entries(TIPO_VIAJE_CFG).map(([id, cfg]) => (
+          <button key={id} className={`rm-fbtn ${tipoViaje===id?"on":""}`} onClick={()=>setTipoViaje(id)}>
+            {cfg.label}
+          </button>
+        ))}
+      </div>
+
       <div className="rm-form-actions">
         <button className="rm-btn-primary" onClick={handleAgregar}>🔒 Agregar bloqueo</button>
       </div>
@@ -367,17 +403,23 @@ function BloqueoPanel({ bloqueos, onBloqueoDia, onBloqueoMes, onEliminar }) {
       </div>
       {bloqueos.length === 0 && <div className="rm-empty">Sin bloqueos activos.</div>}
       <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-        {bloqueos.map(b => (
-          <div key={b.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", background:"#fef2f2", border:"1.5px solid #fca5a5", borderRadius:12 }}>
-            <div>
-              <div style={{ fontSize:".85rem", fontWeight:600, color:"#991b1b" }}>
-                {b.tipo==="dia" ? `📅 ${b.fecha}` : `🗓️ ${MESES_LABEL[b.mes]} ${b.anio}`}
+        {bloqueos.map(b => {
+          const tvCfg = TIPO_VIAJE_CFG[b.tipo_viaje||"ambos"];
+          return (
+            <div key={b.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", background:"#fff5f5", border:"1.5px solid #fecaca", borderRadius:12 }}>
+              <div>
+                <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:".85rem", fontWeight:700, color:"#b91c1c" }}>
+                  {b.tipo==="dia" ? `📅 ${b.fecha}` : `🗓️ ${MESES_LABEL[b.mes]} ${b.anio}`}
+                  <span style={{ fontSize:".65rem", fontWeight:700, padding:"2px 8px", borderRadius:99, background:tvCfg.bg, color:tvCfg.color }}>
+                    {tvCfg.label}
+                  </span>
+                </div>
+                {b.motivo && <div style={{ fontSize:".7rem", color:"#9a8e80", marginTop:2 }}>{b.motivo}</div>}
               </div>
-              {b.motivo && <div style={{ fontSize:".72rem", color:"#9a9080", marginTop:2 }}>{b.motivo}</div>}
+              <button className="rm-btn red" onClick={()=>onEliminar(b.id)}>✕</button>
             </div>
-            <button className="rm-btn red" onClick={()=>onEliminar(b.id)}>✕ Eliminar</button>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -768,16 +810,16 @@ function ReservationManagerInner() {
   };
 
   // ── Bloqueos ───────────────────────────────────────────────
-  const agregarBloqueoDia = async (fecha, motivo) => {
+  const agregarBloqueoDia = async (fecha, motivo, tipoViaje="ambos") => {
     if (!fecha) { showToast("⚠️ Selecciona una fecha"); return; }
-    const { error } = await supabase.from("bloqueos").insert({ tipo:"dia", fecha, motivo: motivo||null });
+    const { error } = await supabase.from("bloqueos").insert({ tipo:"dia", fecha, motivo: motivo||null, tipo_viaje: tipoViaje });
     if (!error) { showToast("🔒 Fecha bloqueada"); cargarBloqueos(); }
     else showToast("❌ "+error.message);
   };
 
-  const agregarBloqueoMes = async (mes, anio, motivo) => {
+  const agregarBloqueoMes = async (mes, anio, motivo, tipoViaje="ambos") => {
     if (!mes || !anio) { showToast("⚠️ Selecciona mes y año"); return; }
-    const { error } = await supabase.from("bloqueos").insert({ tipo:"mes", mes: Number(mes), anio: Number(anio), motivo: motivo||null });
+    const { error } = await supabase.from("bloqueos").insert({ tipo:"mes", mes: Number(mes), anio: Number(anio), motivo: motivo||null, tipo_viaje: tipoViaje });
     if (!error) { showToast("🔒 Mes bloqueado"); cargarBloqueos(); }
     else showToast("❌ "+error.message);
   };
@@ -849,21 +891,23 @@ function ReservationManagerInner() {
         {/* Header */}
         <div className="rm-hdr">
           <div><h1>🚐 Manager de Reservas</h1><small>Araucanía Viajes · araucaniaviajes.cl</small></div>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <span className="rm-live">● EN VIVO</span>
-            <button onClick={()=>supabase.auth.signOut()} style={{background:"transparent",border:"1px solid #ffffff20",color:"#9a9080",borderRadius:"8px",padding:"5px 12px",fontFamily:"inherit",fontSize:".75rem",cursor:"pointer"}}>Salir</button>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span className="rm-live">● En vivo</span>
+            <button onClick={()=>supabase.auth.signOut()} style={{background:"#ffffff18",border:"none",color:"#9a8e80",borderRadius:"99px",padding:"6px 14px",fontFamily:"inherit",fontSize:".72rem",fontWeight:600,cursor:"pointer"}}>
+              Salir
+            </button>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="rm-tabs">
           {[
-            ["dashboard",    "📅 Dashboard"],
-            ["compartido",   "🚌 Compartido"],
-            ["privado",      "🚐 Van Privada"],
-            ["bloqueos",     "🔒 Bloqueos"],
-            ["nuevo-viaje",  "🗓️ Nuevo viaje"],
-            ["nueva-reserva","➕ Nueva reserva"],
+            ["dashboard",    "Calendario"],
+            ["compartido",   "Compartido"],
+            ["privado",      "Van Privada"],
+            ["bloqueos",     "Bloqueos"],
+            ["nuevo-viaje",  "Nuevo Viaje"],
+            ["nueva-reserva","Nueva Reserva"],
           ].map(([k,l]) => (
             <button key={k} className={`rm-tab ${tab===k?"on":""}`} onClick={()=>{setTab(k);setSuccessViaje(null);}}>{l}</button>
           ))}
@@ -874,22 +918,20 @@ function ReservationManagerInner() {
           {/* ── DASHBOARD ── */}
           {tab === "dashboard" && (
             <>
-              <div style={{marginBottom:24}}>
-                <div style={{display:"flex",gap:10,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
-                  <span style={{fontSize:".7rem",color:"#aaa",letterSpacing:".06em",textTransform:"uppercase",fontWeight:600}}>Leyenda</span>
-                  <span style={{display:"flex",alignItems:"center",gap:5,fontSize:".72rem"}}>
-                    <span style={{width:9,height:9,borderRadius:2,background:"#dbeafe",display:"inline-block",border:"1px solid #bfdbfe"}}/>
-                    <span style={{color:"#1e40af",fontWeight:500}}>Compartido</span>
+              <div style={{marginBottom:20}}>
+                <div style={{display:"flex",gap:16,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+                  <span style={{display:"flex",alignItems:"center",gap:5,fontSize:".75rem"}}>
+                    <span style={{width:8,height:8,borderRadius:"50%",background:"#2563eb",display:"inline-block"}}/>
+                    <span style={{color:"#6b5e4e",fontWeight:500}}>Compartido</span>
                   </span>
-                  <span style={{display:"flex",alignItems:"center",gap:5,fontSize:".72rem"}}>
-                    <span style={{width:9,height:9,borderRadius:2,background:"#fff3e0",display:"inline-block",border:"1px solid #fed7aa"}}/>
-                    <span style={{color:"#b45309",fontWeight:500}}>Van privada</span>
+                  <span style={{display:"flex",alignItems:"center",gap:5,fontSize:".75rem"}}>
+                    <span style={{width:8,height:8,borderRadius:"50%",background:"#c2410c",display:"inline-block"}}/>
+                    <span style={{color:"#6b5e4e",fontWeight:500}}>Van privada</span>
                   </span>
-                  <span style={{display:"flex",alignItems:"center",gap:5,fontSize:".72rem"}}>
-                    <span style={{width:9,height:9,borderRadius:2,background:"#fecaca",display:"inline-block",border:"1px solid #fca5a5"}}/>
-                    <span style={{color:"#991b1b",fontWeight:500}}>Bloqueado</span>
+                  <span style={{display:"flex",alignItems:"center",gap:5,fontSize:".75rem"}}>
+                    <span style={{width:8,height:8,borderRadius:"50%",background:"#ef4444",display:"inline-block"}}/>
+                    <span style={{color:"#6b5e4e",fontWeight:500}}>Bloqueado</span>
                   </span>
-                  <span style={{fontSize:".7rem",color:"#bbb",marginLeft:"auto"}}>Pincha un día para ver detalles</span>
                 </div>
                 {loading
                   ? <div className="rm-loading"><div className="rm-spinner"/><div>Cargando…</div></div>
@@ -930,8 +972,7 @@ function ReservationManagerInner() {
               </div>
 
               {tab === "privado" && rutasVanPrivada.length > 0 && (
-                <div className="rm-filters" style={{marginTop:-8}}>
-                  <span style={{fontSize:".72rem",color:"#9a9080",fontWeight:600}}>Ruta:</span>
+                <div className="rm-filters" style={{marginTop:-6}}>
                   <button className={`rm-fbtn ${filtroRuta==="todas"?"on":""}`} onClick={()=>setFiltroRuta("todas")}>Todas</button>
                   {rutasVanPrivada.map(ruta => (
                     <button key={ruta} className={`rm-fbtn ${filtroRuta===ruta?"on":""}`} onClick={()=>setFiltroRuta(ruta)}>
@@ -943,141 +984,84 @@ function ReservationManagerInner() {
 
               {loading
                 ? <div className="rm-loading"><div className="rm-spinner"/><div>Cargando…</div></div>
-                : (
-                  <div className="rm-cards">
-                    {filtrados.length === 0 && <div className="rm-empty">No hay viajes con estos filtros.</div>}
-                    {filtrados.map(viaje => {
-                      const cfg  = ESTADO_CFG[viaje.estado] || ESTADO_CFG.en_espera;
-                      const conf = viaje.reservas?.filter(r=>r.estado==="confirmada").length||0;
-                      const pagados = viaje.reservas?.filter(r=>r.pagos?.some(p=>p.estado==="completado")).length||0;
-                      const pct  = viaje.capacidad ? Math.min((conf/viaje.capacidad)*100,100) : 0;
-                      const isOpen = abierto===viaje.id;
-                      const ingresos = viaje.reservas?.flatMap(r=>r.pagos||[]).filter(p=>p.estado==="completado").reduce((s,p)=>s+p.monto,0)||0;
-                      const isCancelado = viaje.estado==="cancelado";
+                : (() => {
+                    // Aplanar reservas por pasajero (como el wireframe)
+                    const reservasFlat = filtrados.flatMap(viaje =>
+                      (viaje.reservas||[]).map(r => ({ ...r, viaje }))
+                    ).filter(r => r.estado !== "cancelada" || abierto === r.id);
 
-                      return (
-                        <div key={viaje.id} className={`rm-card ${isOpen?"open":""} ${isCancelado?"cancelado-card":""}`}>
-                          <div className="rm-card-hd" onClick={()=>setAbierto(isOpen?null:viaje.id)}>
-                            <div className="rm-card-l">
-                              <div className="rm-icon" style={{background:isCancelado?"#fef2f2":viaje.tipo==="compartido"?"#EDE5D0":"#f0f0f0",opacity:isCancelado?0.7:1}}>
-                                {viaje.tipo==="compartido"?"🚌":"🚐"}
-                              </div>
-                              <div>
-                                <div className="rm-ruta" style={{opacity:isCancelado?0.6:1,textDecoration:isCancelado?"line-through":"none"}}>
-                                  {viaje.ruta?.nombre||"Ruta sin nombre"}
-                                </div>
-                                <div className="rm-meta">
-                                  {fmtFechaCorta(viaje.fecha)} · {viaje.hora_salida?.slice(0,5)} · {fmtPeso(viaje.precio_por_pax)}/pax
-                                  {viaje.vehiculo?` · ${viaje.vehiculo}`:""}
-                                  {viaje.conductor?` · 👤 ${viaje.conductor}`:""}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="rm-card-r">
-                              {viaje.tipo==="compartido" && !isCancelado && (
-                                <div className="rm-prog">
-                                  <div className="rm-prog-lbl">{conf}/{viaje.capacidad} pax</div>
-                                  <div className="rm-prog-bar">
-                                    <div className="rm-prog-fill" style={{width:`${pct}%`,background:pct>=100?"#22c55e":pct>50?"#f07700":"#D4CBB8"}}/>
-                                  </div>
-                                </div>
-                              )}
-                              <span className="rm-estado" style={{color:cfg.color,background:cfg.bg}}>
-                                <span className="rm-dot" style={{background:cfg.dot}}/>{cfg.label}
-                              </span>
-                              {viaje.estado==="listo_para_cobrar" && (
-                                <button className="rm-btn-cobrar" onClick={e=>{e.stopPropagation();enviarCobro(viaje)}}>💳 Enviar cobro</button>
-                              )}
-                              {isCancelado && (
-                                <button className="rm-btn-eliminar" onClick={e=>{e.stopPropagation();eliminarViajeCancelado(viaje);}}>🗑️ Eliminar</button>
-                              )}
-                              <span className="rm-chevron">▼</span>
-                            </div>
-                          </div>
+                    if (reservasFlat.length === 0) return (
+                      <div className="rm-empty">
+                        No hay reservas activas.
+                        <button className="rm-btn" style={{marginLeft:8,marginTop:8}} onClick={()=>setTab("nueva-reserva")}>+ Nueva reserva</button>
+                      </div>
+                    );
 
-                          {isOpen && (
-                            <div className="rm-detail">
-                              {(!viaje.reservas||viaje.reservas.length===0) ? (
-                                <div className="rm-empty" style={{padding:"20px 0"}}>
-                                  Sin reservas.
-                                  {!isCancelado && (
-                                    <button className="rm-btn" style={{marginLeft:8}} onClick={()=>{setFormRes(f=>({...f,viaje_id:viaje.id}));setTab("nueva-reserva");}}>+ Agregar</button>
-                                  )}
-                                </div>
-                              ) : (
-                                <table className="rm-table">
-                                  <thead><tr>
-                                    <th>Pasajero</th><th>Estado</th><th>Contacto</th><th>Pago</th><th>Acciones</th>
-                                  </tr></thead>
-                                  <tbody>
-                                    {viaje.reservas.map(r => {
-                                      const pagado = r.pagos?.some(p=>p.estado==="completado");
-                                      return (
-                                        <tr key={r.id}>
-                                          <td>
-                                            <div className="rm-pax-name">{r.nombre}</div>
-                                            <div className="rm-pax-sub2">{r.num_asientos} asiento(s) · {r.origen_reserva}</div>
-                                          </td>
-                                          <td>
-                                            <span className="rm-estado" style={{
-                                              color:r.estado==="confirmada"?"#2d6a4f":r.estado==="cancelada"?"#991b1b":"#9a9080",
-                                              background:r.estado==="confirmada"?"#e8f5e9":r.estado==="cancelada"?"#fef2f2":"#f5f0e8",
-                                              fontSize:".68rem"
-                                            }}>
-                                              <span className="rm-dot" style={{background:r.estado==="confirmada"?"#40916c":r.estado==="cancelada"?"#dc2626":"#9a9080"}}/>
-                                              {r.estado}
-                                            </span>
-                                          </td>
-                                          <td>
-                                            <div className="rm-pax-sub2">📧 {r.email}</div>
-                                            <div className="rm-pax-sub2">📱 {r.telefono}</div>
-                                          </td>
-                                          <td>
-                                            <span className="rm-estado" style={{color:pagado?"#2d6a4f":"#b85c00",background:pagado?"#e8f5e9":"#fff3e0",fontSize:".68rem"}}>
-                                              {pagado?"✓ Pagado":"Pendiente"}
-                                            </span>
-                                          </td>
-                                          <td>
-                                            <div className="rm-act">
-                                              {!isCancelado && r.estado==="pendiente"  && <button className="rm-btn" onClick={()=>confirmarPasajero(r.id)}>✓</button>}
-                                              {!isCancelado && r.estado==="confirmada" && !pagado && <button className="rm-btn green" onClick={()=>marcarPagado(r.id,viaje.precio_por_pax*r.num_asientos)}>💳</button>}
-                                              {!isCancelado && r.estado!=="cancelada"  && <button className="rm-btn red" onClick={()=>cancelarPasajero(r.id,r.nombre)}>✕</button>}
-                                              <button className="rm-btn" onClick={()=>{
-                                                const msg=encodeURIComponent(`Hola ${r.nombre.split(" ")[0]} 👋, te contactamos desde *Araucanía Viajes* por tu reserva ${viaje.ruta?.nombre} el ${fmtFechaCorta(viaje.fecha)}.`);
-                                                window.open(`https://wa.me/${r.telefono.replace(/\D/g,"")}?text=${msg}`,"_blank");
-                                              }}>💬</button>
-                                            </div>
-                                          </td>
-                                        </tr>
-                                      );
-                                    })}
-                                  </tbody>
-                                </table>
-                              )}
-                              <div className="rm-detail-ft">
-                                <div className="rm-detail-ft-info">
-                                  {pagados}/{conf} pagaron · Recaudado: {fmtPeso(ingresos)}
-                                  {viaje.notas_admin && <span> · 📝 {viaje.notas_admin}</span>}
-                                </div>
-                                {viaje.estado==="listo_para_cobrar" && (
-                                  <button className="rm-btn-cobrar" onClick={()=>enviarCobro(viaje)}>💳 Enviar cobro</button>
-                                )}
-                                {!isCancelado && (
-                                  <button className="rm-btn-ghost" style={{borderColor:"#fca5a5",color:"#991b1b"}} onClick={()=>cancelarViaje(viaje)}>🚫 Cancelar viaje</button>
-                                )}
-                                {isCancelado && (
-                                  <button className="rm-btn-eliminar" onClick={()=>eliminarViajeCancelado(viaje)}>🗑️ Eliminar permanentemente</button>
-                                )}
-                                {!isCancelado && <button className="rm-btn-wa-lg" onClick={()=>showToast("📨 Función de grupo próximamente")}>📢 Grupo</button>}
-                                <button className="rm-btn-ghost" onClick={cargarViajes}>🔄</button>
-                              </div>
-                            </div>
-                          )}
+                    return (
+                      <div>
+                        <div className="rm-sec-hdr">
+                          {tab==="compartido"?"COMPARTIDO":"VAN PRIVADA"} — RESERVAS ACTIVAS ({reservasFlat.length})
                         </div>
-                      );
-                    })}
-                  </div>
-                )
+                        <div className="rm-cards">
+                          {reservasFlat.map(r => {
+                            const viaje  = r.viaje;
+                            const pagado = r.pagos?.some(p=>p.estado==="completado");
+                            const isOpen = abierto === r.id;
+
+                            return (
+                              <div key={r.id} className={`rm-res-card ${r.estado==="cancelada"?"cancelado-card":""}`}
+                                onClick={()=>setAbierto(isOpen?null:r.id)}>
+                                <div className="rm-res-card-top">
+                                  <div className="rm-res-nombre">{r.nombre}</div>
+                                  <span className={`rm-res-badge ${viaje.estado==="cancelado"?"cancelado":viaje.tipo}`}>
+                                    {viaje.tipo==="compartido"?"Compartido":"Van Privada"}
+                                  </span>
+                                </div>
+                                <div className="rm-res-ruta">{viaje.ruta?.nombre||"Ruta sin nombre"}</div>
+                                <div className="rm-res-meta">
+                                  <span>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                                    {viaje.hora_salida?.slice(0,5)||"—"}
+                                  </span>
+                                  <span>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    {r.num_asientos} pax
+                                  </span>
+                                  <span style={{color:pagado?"#16a34a":"#d97706",fontWeight:700}}>
+                                    {fmtPeso(viaje.precio_por_pax * r.num_asientos)}
+                                  </span>
+                                  <span style={{color:pagado?"#16a34a":"#9a8e80",fontSize:".65rem"}}>
+                                    {pagado?"✓ Pagado":"Pendiente"}
+                                  </span>
+                                </div>
+
+                                {isOpen && (
+                                  <div className="rm-res-actions" onClick={e=>e.stopPropagation()}>
+                                    {r.estado==="pendiente" && (
+                                      <button className="rm-btn green" onClick={()=>confirmarPasajero(r.id)}>✓ Confirmar</button>
+                                    )}
+                                    {r.estado==="confirmada" && !pagado && (
+                                      <button className="rm-btn green" onClick={()=>marcarPagado(r.id, viaje.precio_por_pax*r.num_asientos)}>💳 Marcar pagado</button>
+                                    )}
+                                    <button className="rm-btn-wa-lg" onClick={()=>{
+                                      const msg=encodeURIComponent(`Hola ${r.nombre.split(" ")[0]} 👋, te contactamos desde *Araucanía Viajes* por tu reserva ${viaje.ruta?.nombre} el ${fmtFechaCorta(viaje.fecha)}.`);
+                                      window.open(`https://wa.me/${r.telefono.replace(/\D/g,"")}?text=${msg}`,"_blank");
+                                    }}>💬 WhatsApp</button>
+                                    {r.estado!=="cancelada" && (
+                                      <button className="rm-btn red" onClick={()=>cancelarPasajero(r.id,r.nombre)}>✕ Cancelar</button>
+                                    )}
+                                    {viaje.estado==="listo_para_cobrar" && (
+                                      <button className="rm-btn-cobrar" onClick={()=>enviarCobro(viaje)}>💳 Enviar cobro</button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()
               }
             </>
           )}

@@ -1,7 +1,5 @@
 import React from 'react';
-import { MessageCircle, Landmark, PlaneTakeoff, Waves, Ship, Mountain, PartyPopper } from 'lucide-react';
-
-const WHATSAPP_NUMBER = '+56951569704';
+import { Landmark, PlaneTakeoff, Waves, Ship, Mountain, PartyPopper } from 'lucide-react';
 
 const services = [
   {
@@ -9,42 +7,36 @@ const services = [
     title: 'Turismo',
     description: 'Descubre los lugares más hermosos de la Araucanía con guías especializados y vehículos de lujo.',
     image: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=800&q=80',
-    mensaje: 'Hola, me interesa cotizar un tour turístico por la Araucanía',
   },
   {
     Icon: PlaneTakeoff,
     title: 'Traslado Aeropuerto',
     description: 'Llegamos a tiempo, siempre. Traslados puntuales desde y hacia el aeropuerto con seguimiento de vuelo.',
     image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
-    mensaje: 'Hola, me interesa cotizar un traslado al aeropuerto',
   },
   {
     Icon: Waves,
     title: 'Termas',
     description: 'Relájate en las mejores termas de la región. Nos encargamos del transporte para que solo pienses en descansar.',
     image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80',
-    mensaje: 'Hola, me interesa cotizar un traslado a las termas',
   },
   {
     Icon: Ship,
     title: 'Costa y Mar',
     description: 'Viajes a la costa para disfrutar de playas y paisajes marinos únicos del sur de Chile.',
     image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-    mensaje: 'Hola, me interesa cotizar un viaje a la costa',
   },
   {
     Icon: Mountain,
     title: 'Lagos y Volcanes',
     description: 'Excursiones a los lagos más espectaculares y vistas privilegiadas de los volcanes Villarrica y Llaima.',
     image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80',
-    mensaje: 'Hola, me interesa cotizar una excursión a los lagos y volcanes',
   },
   {
     Icon: PartyPopper,
     title: 'Eventos y Matrimonios',
     description: 'Transporte exclusivo para tu evento especial. Coordinamos traslados grupales con puntualidad y estilo.',
     image: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80',
-    mensaje: 'Hola, me interesa cotizar transporte para un evento o matrimonio',
   },
 ];
 
@@ -79,18 +71,9 @@ const Services = () => (
                   <Icon size={22} className="text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">{service.title}</h3>
-                <p className="text-white/80 text-sm mb-4 leading-relaxed">
+                <p className="text-white/80 text-sm leading-relaxed">
                   {service.description}
                 </p>
-                <a
-                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(service.mensaje)}`}
-                  className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 w-fit"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <MessageCircle size={16} />
-                  Cotizar ahora
-                </a>
               </div>
             </div>
           );

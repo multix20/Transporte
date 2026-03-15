@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const slides = [
   {
@@ -28,9 +28,6 @@ const slides = [
     priority: false,
   },
 ];
-
-const WHATSAPP_NUMBER = '+56951569704';
-const WHATSAPP_MESSAGE = 'Hola, me interesa conocer más sobre sus servicios de transporte';
 
 const Hero = () => {
   const [current, setCurrent] = useState(0);
@@ -110,13 +107,6 @@ const Hero = () => {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4">
-          <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`}
-            className="inline-flex items-center gap-2 bg-green-500 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-2xl"
-          >
-            <MessageCircle size={22} />
-            Cotizar por WhatsApp
-          </a>
           <a
             href="#servicios"
             className="border-2 border-white/80 text-white px-8 py-4 rounded-xl font-bold text-lg"

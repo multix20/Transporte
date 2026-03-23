@@ -41,7 +41,6 @@ function LogoAnimado({ size = "hdr" }) {
         fontFamily:"'Syne', sans-serif", fontWeight:800, fontSize,
         color:"#fff", letterSpacing:"-0.5px", lineHeight:1, overflow:"hidden",
       }}>
-        <span>TEMU</span>
         <span style={{
           display:"inline-block",
           transform: (fase === "solo" || fase === "saliendo") ? "translateX(60px)" : "translateX(0)",
@@ -53,7 +52,7 @@ function LogoAnimado({ size = "hdr" }) {
             : "none",
           color:"#c8f000",
           willChange:"transform, opacity",
-        }}>EVO</span>
+        }}>MUEVO</span>
       </span>
     </div>
   );

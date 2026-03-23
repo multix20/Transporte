@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, MapPin, LogIn, UserPlus, X, Eye, EyeOff, LogOut } from 'lucide-react';
+import { ChevronRight, MapPin, LogIn, UserPlus, X, Eye, EyeOff, LogOut, User } from 'lucide-react';
 import supabase from '../lib/supabase';
 import MisReservas from './MisReservas';
 
-// ── Logo animado TEMU → TEMUEVO ───────────────────────────────────────────────
+// ── Logo animado T → MUEVO ───────────────────────────────────────────────
 function LogoAnimado({ size = "hdr" }) {
   const [fase, setFase] = useState("solo"); // "solo" | "entrando" | "completo" | "saliendo"
 
@@ -41,7 +41,6 @@ function LogoAnimado({ size = "hdr" }) {
         fontFamily:"'Syne', sans-serif", fontWeight:800, fontSize,
         color:"#fff", letterSpacing:"-0.5px", lineHeight:1, overflow:"hidden",
       }}>
-        <span>TEMU</span>
         <span style={{
           display:"inline-block",
           transform: (fase === "solo" || fase === "saliendo") ? "translateX(60px)" : "translateX(0)",
@@ -53,19 +52,20 @@ function LogoAnimado({ size = "hdr" }) {
             : "none",
           color:"#c8f000",
           willChange:"transform, opacity",
-        }}>EVO</span>
+        }}>MUEVO</span>
       </span>
     </div>
   );
 }
 
 export default function Header() {
-  const [drawerOpen, setDrawerOpen]   = useState(false);
-  const [scrolled,   setScrolled]     = useState(false);
-  const [modal,      setModal]        = useState(null);
-  const [user,       setUser]         = useState(null);
-  const [userMenu,   setUserMenu]     = useState(false);
-  const [misReservas, setMisReservas] = useState(false);
+  const [drawerOpen,     setDrawerOpen]     = useState(false);
+  const [scrolled,       setScrolled]       = useState(false);
+  const [modal,          setModal]          = useState(null);
+  const [user,           setUser]           = useState(null);
+  const [userMenu,       setUserMenu]       = useState(false);
+  const [misReservas,    setMisReservas]    = useState(false);
+  const [mobileAuthMenu, setMobileAuthMenu] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -128,7 +128,7 @@ export default function Header() {
       <header className={`hdr ${scrolled ? 'hdr--scrolled' : ''}`}>
         <div className="hdr__inner">
 
-          <a href="#inicio" className="hdr__logo" aria-label="TEMUEVO">
+          <a href="#inicio" className="hdr__logo" aria-label="TMUEVO">
             <LogoAnimado size="hdr" />
           </a>
 
@@ -167,10 +167,37 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <div className="hdr__auth-desktop">
-                <button className="hdr__signin"   onClick={() => openModal('login')}>Inicia sesión</button>
-                <button className="hdr__register" onClick={() => openModal('register')}>Regístrate</button>
-              </div>
+              <>
+                {/* Botones de texto — solo desktop */}
+                <div className="hdr__auth-desktop">
+                  <button className="hdr__signin"   onClick={() => openModal('login')}>Inicia sesión</button>
+                  <button className="hdr__register" onClick={() => openModal('register')}>Regístrate</button>
+                </div>
+
+                {/* Ícono persona — solo mobile */}
+                <div style={{ position: 'relative' }}>
+                  <button
+                    className="hdr__mobile-auth"
+                    onClick={() => setMobileAuthMenu(v => !v)}
+                    aria-label="Cuenta"
+                  >
+                    <User size={20} strokeWidth={1.8}/>
+                  </button>
+                  {mobileAuthMenu && (
+                    <>
+                      <div className="user-menu-overlay" onClick={() => setMobileAuthMenu(false)}/>
+                      <div className="user-menu">
+                        <button className="user-menu__item" onClick={() => { openModal('login'); setMobileAuthMenu(false); }}>
+                          <LogIn size={14}/> Inicia sesión
+                        </button>
+                        <button className="user-menu__item" onClick={() => { openModal('register'); setMobileAuthMenu(false); }}>
+                          <UserPlus size={14}/> Regístrate
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
             )}
 
             <button className="hdr__hamburger" onClick={() => setDrawerOpen(true)} aria-label="Abrir menú">
@@ -216,16 +243,7 @@ export default function Header() {
         </nav>
 
         <div className="drawer__footer">
-          {!user ? (
-            <div className="drawer__auth-btns">
-              <button className="drawer__btn-ghost" onClick={() => openModal('login')}>
-                <LogIn size={15}/> Inicia sesión
-              </button>
-              <button className="drawer__btn-solid" onClick={() => openModal('register')}>
-                <UserPlus size={15}/> Regístrate
-              </button>
-            </div>
-          ) : (
+          {user && (
             <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
               <button className="drawer__btn-ghost" style={{ width: '100%' }} onClick={handleSignOut}>
                 <LogOut size={15}/> Cerrar sesión
@@ -414,6 +432,10 @@ const CSS = `
   .hdr__user-pill{display:flex;align-items:center;gap:7px;padding:8px 16px;border-radius:99px;border:1.5px solid #333;background:transparent;font-size:15px;font-weight:600;color:#fff;cursor:pointer;transition:all .18s;font-family:'DM Sans',sans-serif}
   .hdr__user-pill:hover{border-color:#fff;background:#111}
 
+  .hdr__mobile-auth{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:8px;background:transparent;border:1.5px solid #fff;color:#fff;cursor:pointer;transition:background .18s}
+  .hdr__mobile-auth:hover{background:#1a1a1a}
+  @media(min-width:768px){.hdr__mobile-auth{display:none}}
+
   .user-menu-overlay{position:fixed;inset:0;z-index:299}
   .user-menu{position:absolute;top:calc(100% + 8px);right:0;background:#111;border:1px solid #222;border-radius:12px;padding:8px;min-width:200px;z-index:300;box-shadow:0 8px 30px rgba(0,0,0,.5);animation:fadeDown .18s ease both}
   @keyframes fadeDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
@@ -453,7 +475,6 @@ const CSS = `
   @keyframes drawerSlide{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
 
   .drawer__footer{padding:1rem 1.25rem;border-top:1px solid #141414}
-  .drawer__auth-btns{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
   .drawer__btn-ghost{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:transparent;border:1.5px solid #222;border-radius:10px;color:#bbb;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s}
   .drawer__btn-ghost:hover{border-color:#555;color:#fff}
   .drawer__btn-solid{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:#fff;border:none;border-radius:10px;color:#000;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s}

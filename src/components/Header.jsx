@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, MapPin, LogIn, UserPlus, X, Eye, EyeOff, LogOut } from 'lucide-react';
+import { ChevronRight, MapPin, LogIn, UserPlus, X, Eye, EyeOff, LogOut, User } from 'lucide-react';
 import supabase from '../lib/supabase';
 import MisReservas from './MisReservas';
 
-// ── Logo animado TEMU → TEMUEVO ───────────────────────────────────────────────
+// ── Logo animado T → MUEVO ───────────────────────────────────────────────
 function LogoAnimado({ size = "hdr" }) {
-  const [fase, setFase] = useState("solo"); // "solo" | "entrando" | "completo" | "saliendo"
+  const [fase, setFase] = useState("solo");
 
   useEffect(() => {
     let t;
@@ -59,12 +59,13 @@ function LogoAnimado({ size = "hdr" }) {
 }
 
 export default function Header() {
-  const [drawerOpen, setDrawerOpen]   = useState(false);
-  const [scrolled,   setScrolled]     = useState(false);
-  const [modal,      setModal]        = useState(null);
-  const [user,       setUser]         = useState(null);
-  const [userMenu,   setUserMenu]     = useState(false);
-  const [misReservas, setMisReservas] = useState(false);
+  const [drawerOpen,     setDrawerOpen]     = useState(false);
+  const [scrolled,       setScrolled]       = useState(false);
+  const [modal,          setModal]          = useState(null);
+  const [user,           setUser]           = useState(null);
+  const [userMenu,       setUserMenu]       = useState(false);
+  const [misReservas,    setMisReservas]    = useState(false);
+  const [mobileAuthMenu, setMobileAuthMenu] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -100,6 +101,10 @@ export default function Header() {
     ? (user.user_metadata?.full_name ?? user.email.split('@')[0])
     : null;
 
+  const initials = displayName
+    ? displayName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+    : '';
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setUserMenu(false);
@@ -127,7 +132,7 @@ export default function Header() {
       <header className={`hdr ${scrolled ? 'hdr--scrolled' : ''}`}>
         <div className="hdr__inner">
 
-          <a href="#inicio" className="hdr__logo" aria-label="TEMUEVO">
+          <a href="#inicio" className="hdr__logo" aria-label="TMUEVO">
             <LogoAnimado size="hdr" />
           </a>
 
@@ -140,7 +145,16 @@ export default function Header() {
           <div className="hdr__actions">
             {user ? (
               <div style={{ position: 'relative' }}>
-                <button className="hdr__user-pill" onClick={() => setUserMenu(v => !v)}>
+                {/* Avatar circular — solo mobile */}
+                <button
+                  className="hdr__user-avatar-btn hdr__mobile-only"
+                  onClick={() => setUserMenu(v => !v)}
+                  aria-label="Mi cuenta"
+                >
+                  {initials}
+                </button>
+                {/* Pill con nombre — solo desktop */}
+                <button className="hdr__user-pill hdr__desktop-only" onClick={() => setUserMenu(v => !v)}>
                   <span>{displayName}</span>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -166,10 +180,37 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <div className="hdr__auth-desktop">
-                <button className="hdr__signin"   onClick={() => openModal('login')}>Inicia sesión</button>
-                <button className="hdr__register" onClick={() => openModal('register')}>Regístrate</button>
-              </div>
+              <>
+                {/* Botones de texto — solo desktop */}
+                <div className="hdr__auth-desktop">
+                  <button className="hdr__signin"   onClick={() => openModal('login')}>Inicia sesión</button>
+                  <button className="hdr__register" onClick={() => openModal('register')}>Regístrate</button>
+                </div>
+
+                {/* Ícono persona — solo mobile */}
+                <div style={{ position: 'relative' }}>
+                  <button
+                    className="hdr__mobile-auth"
+                    onClick={() => setMobileAuthMenu(v => !v)}
+                    aria-label="Cuenta"
+                  >
+                    <User size={20} strokeWidth={1.8}/>
+                  </button>
+                  {mobileAuthMenu && (
+                    <>
+                      <div className="user-menu-overlay" onClick={() => setMobileAuthMenu(false)}/>
+                      <div className="user-menu">
+                        <button className="user-menu__item" onClick={() => { openModal('login'); setMobileAuthMenu(false); }}>
+                          <LogIn size={14}/> Inicia sesión
+                        </button>
+                        <button className="user-menu__item" onClick={() => { openModal('register'); setMobileAuthMenu(false); }}>
+                          <UserPlus size={14}/> Regístrate
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
             )}
 
             <button className="hdr__hamburger" onClick={() => setDrawerOpen(true)} aria-label="Abrir menú">
@@ -189,7 +230,7 @@ export default function Header() {
 
         {user && (
           <div className="drawer__user">
-            <div className="drawer__user-avatar">{displayName[0].toUpperCase()}</div>
+            <div className="drawer__user-avatar">{initials}</div>
             <div>
               <div className="drawer__user-name">{displayName}</div>
               <div className="drawer__user-email">{user.email}</div>
@@ -215,16 +256,7 @@ export default function Header() {
         </nav>
 
         <div className="drawer__footer">
-          {!user ? (
-            <div className="drawer__auth-btns">
-              <button className="drawer__btn-ghost" onClick={() => openModal('login')}>
-                <LogIn size={15}/> Inicia sesión
-              </button>
-              <button className="drawer__btn-solid" onClick={() => openModal('register')}>
-                <UserPlus size={15}/> Regístrate
-              </button>
-            </div>
-          ) : (
+          {user && (
             <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
               <button className="drawer__btn-ghost" style={{ width: '100%' }} onClick={handleSignOut}>
                 <LogOut size={15}/> Cerrar sesión
@@ -267,6 +299,14 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
   const [success,  setSuccess]  = useState('');
 
   const reset = () => { setError(''); setSuccess(''); };
+
+  const handleGoogle = async () => {
+    setError('');
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+  };
 
   const handleSubmit = async () => {
     reset();
@@ -311,6 +351,14 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
         <p className="modal-sub">
           {isLogin ? 'Inicia sesión para ver tus reservas' : 'Regístrate y reserva tu próximo viaje'}
         </p>
+
+        {/* Botón Google */}
+        <button className="modal-google" onClick={handleGoogle} disabled={loading}>
+          <GoogleIcon />
+          Continuar con Google
+        </button>
+
+        <div className="modal-divider"><span>o</span></div>
 
         <div className="modal-fields">
           {!isLogin && (
@@ -373,6 +421,17 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
   );
 }
 
+/* ── Google Icon ─────────────────────────────────────────────────────────────── */
+const GoogleIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    <path fill="none" d="M0 0h48v48H0z"/>
+  </svg>
+);
+
 /* ── Hamburger ───────────────────────────────────────────────────────────────── */
 const HamburgerIcon = () => (
   <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
@@ -394,7 +453,6 @@ const CSS = `
   .hdr__logo{display:flex;align-items:center;gap:6px;text-decoration:none;flex-shrink:0;transition:opacity .2s}
   .hdr__logo:hover{opacity:.85}
   .hdr__logo-mark{width:34px;height:34px;border-radius:8px;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;letter-spacing:-0.5px;flex-shrink:0}
-  .hdr__logo-name{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;letter-spacing:-0.5px;line-height:1}
 
   .hdr__nav{display:none;align-items:center;gap:.25rem;flex:1;margin-left:2rem}
   @media(min-width:768px){.hdr__nav{display:flex}}
@@ -410,8 +468,22 @@ const CSS = `
   .hdr__signin:hover{background:#111}
   .hdr__register{padding:8px 16px;border-radius:99px;border:1.5px solid #fff;background:transparent;font-size:15px;font-weight:600;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;white-space:nowrap}
   .hdr__register:hover{background:#fff;color:#000}
+
   .hdr__user-pill{display:flex;align-items:center;gap:7px;padding:8px 16px;border-radius:99px;border:1.5px solid #333;background:transparent;font-size:15px;font-weight:600;color:#fff;cursor:pointer;transition:all .18s;font-family:'DM Sans',sans-serif}
   .hdr__user-pill:hover{border-color:#fff;background:#111}
+
+  .hdr__mobile-only{display:flex !important}
+  .hdr__desktop-only{display:none !important}
+  @media(min-width:768px){
+    .hdr__mobile-only{display:none !important}
+    .hdr__desktop-only{display:flex !important}
+  }
+  .hdr__user-avatar-btn{width:36px;height:36px;border-radius:50%;background:#fff;color:#000;border:none;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .2s;flex-shrink:0}
+  .hdr__user-avatar-btn:hover{opacity:.85}
+
+  .hdr__mobile-auth{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:8px;background:transparent;border:1.5px solid #fff;color:#fff;cursor:pointer;transition:background .18s}
+  .hdr__mobile-auth:hover{background:#1a1a1a}
+  @media(min-width:768px){.hdr__mobile-auth{display:none}}
 
   .user-menu-overlay{position:fixed;inset:0;z-index:299}
   .user-menu{position:absolute;top:calc(100% + 8px);right:0;background:#111;border:1px solid #222;border-radius:12px;padding:8px;min-width:200px;z-index:300;box-shadow:0 8px 30px rgba(0,0,0,.5);animation:fadeDown .18s ease both}
@@ -431,8 +503,6 @@ const CSS = `
   .drawer{position:fixed;top:0;right:0;bottom:0;width:min(300px,82vw);z-index:400;background:#050505;border-left:1px solid #1a1a1a;transform:translateX(100%);transition:transform .38s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;font-family:'DM Sans',sans-serif}
   .drawer.open{transform:translateX(0)}
   .drawer__header{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.25rem;border-bottom:1px solid #141414}
-  .drawer__logo{display:flex;align-items:center;gap:6px}
-  .drawer__logo-name{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:#fff;letter-spacing:-0.3px}
   .drawer__close{width:34px;height:34px;border-radius:8px;border:1px solid #222;background:transparent;color:#888;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
   .drawer__close:hover{border-color:#444;color:#fff}
 
@@ -452,11 +522,8 @@ const CSS = `
   @keyframes drawerSlide{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
 
   .drawer__footer{padding:1rem 1.25rem;border-top:1px solid #141414}
-  .drawer__auth-btns{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
   .drawer__btn-ghost{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:transparent;border:1.5px solid #222;border-radius:10px;color:#bbb;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s}
   .drawer__btn-ghost:hover{border-color:#555;color:#fff}
-  .drawer__btn-solid{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:#fff;border:none;border-radius:10px;color:#000;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s}
-  .drawer__btn-solid:hover{background:#e8e8e8}
   .drawer__location{display:flex;align-items:center;gap:5px;justify-content:center;margin-top:10px;color:#333;font-size:11px}
 
   .modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);animation:fadeIn .2s ease both}
@@ -466,7 +533,15 @@ const CSS = `
   .modal-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:8px;border:1px solid #e5e5e5;background:transparent;color:#999;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .18s}
   .modal-close:hover{background:#f5f5f5;color:#000}
   .modal-title{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:#000;margin-bottom:4px}
-  .modal-sub{font-size:.87rem;color:#888;margin-bottom:1.5rem}
+  .modal-sub{font-size:.87rem;color:#888;margin-bottom:1.25rem}
+
+  .modal-google{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;border:1.5px solid #e5e5e5;border-radius:10px;background:#fff;font-size:.93rem;font-weight:600;font-family:'DM Sans',sans-serif;color:#1a1a1a;cursor:pointer;transition:all .2s;margin-bottom:.75rem}
+  .modal-google:hover{border-color:#ccc;background:#f9f9f9;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .modal-google:disabled{opacity:.5;cursor:not-allowed}
+
+  .modal-divider{display:flex;align-items:center;gap:10px;margin-bottom:.75rem;color:#ccc;font-size:.8rem}
+  .modal-divider::before,.modal-divider::after{content:'';flex:1;height:1px;background:#e5e5e5}
+
   .modal-fields{display:flex;flex-direction:column;gap:12px;margin-bottom:1rem}
   .modal-field{display:flex;flex-direction:column;gap:5px}
   .modal-label{font-size:.78rem;font-weight:600;color:#555;letter-spacing:.02em}

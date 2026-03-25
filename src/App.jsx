@@ -13,6 +13,7 @@ import WhatsAppButton from './components/WhatsAppButton';
 import Reservas from './components/Reservas';
 import ReservationManager from './components/ReservationManager';
 import SocioDashboard from './components/SocioDashboard';
+import ResetPassword from './components/ResetPassword';
 
 // ─── Landing page pública ─────────────────────────────────────
 const LandingPage = () => (
@@ -36,9 +37,10 @@ const LandingPage = () => (
 const App = () => (
   <BrowserRouter>
     <Routes>
-      <Route path="/"      element={<LandingPage />} />
-      <Route path="/admin" element={<ReservationManager />} />
-      <Route path="/socio" element={<SocioDashboard />} />
+      <Route path="/"               element={<LandingPage />} />
+      <Route path="/admin"          element={<ReservationManager />} />
+      <Route path="/socio"          element={<SocioDashboard />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
     </Routes>
   </BrowserRouter>
 );

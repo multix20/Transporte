@@ -145,7 +145,6 @@ export default function Header() {
           <div className="hdr__actions">
             {user ? (
               <div style={{ position: 'relative' }}>
-                {/* Avatar circular — solo mobile */}
                 <button
                   className="hdr__user-avatar-btn hdr__mobile-only"
                   onClick={() => setUserMenu(v => !v)}
@@ -153,7 +152,6 @@ export default function Header() {
                 >
                   {initials}
                 </button>
-                {/* Pill con nombre — solo desktop */}
                 <button className="hdr__user-pill hdr__desktop-only" onClick={() => setUserMenu(v => !v)}>
                   <span>{displayName}</span>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
@@ -181,13 +179,11 @@ export default function Header() {
               </div>
             ) : (
               <>
-                {/* Botones de texto — solo desktop */}
                 <div className="hdr__auth-desktop">
                   <button className="hdr__signin"   onClick={() => openModal('login')}>Inicia sesión</button>
                   <button className="hdr__register" onClick={() => openModal('register')}>Regístrate</button>
                 </div>
 
-                {/* Ícono persona — solo mobile */}
                 <div style={{ position: 'relative' }}>
                   <button
                     className="hdr__mobile-auth"
@@ -288,7 +284,9 @@ export default function Header() {
 
 /* ── Auth Modal ─────────────────────────────────────────────────────────────── */
 function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
-  const isLogin = mode === 'login';
+  const isLogin  = mode === 'login';
+  const isForgot = mode === 'forgot';
+
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [name,     setName]     = useState('');
@@ -308,6 +306,23 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
     });
   };
 
+  const handleForgot = async () => {
+    reset();
+    if (!email) { setError('Ingresa tu email.'); return; }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setSuccess('¡Listo! Revisa tu email para restablecer tu contraseña.');
+    } catch (e) {
+      setError(e.message || 'Error desconocido.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async () => {
     reset();
     if (!email || !password) { setError('Completa todos los campos.'); return; }
@@ -325,7 +340,7 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
           options: { data: { full_name: name, phone } },
         });
         if (error) throw error;
-        setSuccess('¡Cuenta creada! Revisa tu email para confirmar.');
+        setSuccess('¡Cuenta creada! Ya puedes iniciar sesión.');
       }
     } catch (e) {
       const msg = e.message || '';
@@ -337,6 +352,51 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
     }
   };
 
+  /* ── Vista Forgot Password ── */
+  if (isForgot) {
+    return (
+      <>
+        <div className="modal-overlay" onClick={onClose}/>
+        <div className="modal-card" role="dialog" aria-modal="true">
+          <button className="modal-close" onClick={onClose} aria-label="Cerrar"><X size={18}/></button>
+
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:'1.5rem' }}>
+            <LogoAnimado size="drawer" />
+          </div>
+
+          <h2 className="modal-title">Recuperar contraseña</h2>
+          <p className="modal-sub">Te enviaremos un link para restablecer tu contraseña</p>
+
+          <div className="modal-fields">
+            <div className="modal-field">
+              <label className="modal-label">Email</label>
+              <input className="modal-input" type="email" placeholder="tu@email.com"
+                value={email} onChange={e => setEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleForgot()}
+                disabled={loading}/>
+            </div>
+          </div>
+
+          {error   && <div className="modal-error">{error}</div>}
+          {success && <div className="modal-success">{success}</div>}
+
+          {!success && (
+            <button className="modal-submit" onClick={handleForgot} disabled={loading}>
+              {loading ? <span className="modal-spinner"/> : 'Enviar link de recuperación'}
+            </button>
+          )}
+
+          <p className="modal-switch">
+            <button className="modal-switch-btn" onClick={() => { reset(); onSwitch('login'); }}>
+              ← Volver al inicio de sesión
+            </button>
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  /* ── Vista Login / Register ── */
   return (
     <>
       <div className="modal-overlay" onClick={onClose}/>
@@ -352,7 +412,6 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
           {isLogin ? 'Inicia sesión para ver tus reservas' : 'Regístrate y reserva tu próximo viaje'}
         </p>
 
-        {/* Botón Google */}
         <button className="modal-google" onClick={handleGoogle} disabled={loading}>
           <GoogleIcon />
           Continuar con Google
@@ -387,7 +446,16 @@ function AuthModal({ mode, onClose, onSwitch, onSuccess }) {
               onKeyDown={e => e.key === 'Enter' && handleSubmit()} disabled={loading}/>
           </div>
           <div className="modal-field">
-            <label className="modal-label">Contraseña</label>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <label className="modal-label">Contraseña</label>
+              {isLogin && (
+                <button className="modal-forgot-link"
+                  onClick={() => { reset(); onSwitch('forgot'); }}
+                  type="button">
+                  ¿Olvidaste tu contraseña?
+                </button>
+              )}
+            </div>
             <div className="modal-pwd-wrap">
               <input className="modal-input modal-input--pwd"
                 type={showPwd ? 'text' : 'password'} placeholder="••••••••"
@@ -545,6 +613,8 @@ const CSS = `
   .modal-fields{display:flex;flex-direction:column;gap:12px;margin-bottom:1rem}
   .modal-field{display:flex;flex-direction:column;gap:5px}
   .modal-label{font-size:.78rem;font-weight:600;color:#555;letter-spacing:.02em}
+  .modal-forgot-link{background:none;border:none;font-size:.75rem;color:#888;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;padding:0}
+  .modal-forgot-link:hover{color:#000}
   .modal-input{width:100%;padding:12px 14px;border:1.5px solid #e5e5e5;border-radius:10px;font-size:.93rem;font-family:'DM Sans',sans-serif;color:#000;background:#fafafa;outline:none;transition:border-color .2s}
   .modal-input:focus{border-color:#000;background:#fff}
   .modal-input::placeholder{color:#bbb}

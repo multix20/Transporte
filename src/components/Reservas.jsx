@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import supabase from "../lib/supabase";
 
 const WHATSAPP_NUMBER    = "56951569704";
-const MAX_ASIENTOS       = 10;
+const MAX_PAX_VAN        = 8;
 const PAX_COMPARTIDO     = 10;
 const MARGEN_COMP        = 1.25;
 const RECARGO_IDA_VUELTA = 1.5;
@@ -161,19 +161,10 @@ async function obtenerOCrearViaje({ rutaKey, origenId, destinoId, fecha, hora, t
     .eq("ruta_id", rutaId).eq("fecha", fecha).eq("tipo", tipo).not("estado","eq","cancelado").maybeSingle();
   if (viajeExistente) return viajeExistente.id;
   const { data: nuevoViaje, error } = await supabase.from("viajes")
-    .insert({ ruta_id:rutaId, tipo, fecha, hora_salida: hora || "08:00", capacidad: tipo==="compartido" ? MAX_ASIENTOS : 8, precio_por_pax, estado:"en_espera" })
+    .insert({ ruta_id:rutaId, tipo, fecha, hora_salida: hora || "08:00", capacidad: MAX_PAX_VAN, precio_por_pax, estado:"en_espera" })
     .select("id").single();
   if (error) throw new Error("No se pudo crear el viaje");
   return nuevoViaje.id;
-}
-
-async function contarAsientosOcupados(rutaKey, fecha) {
-  const rutaNombre = RUTA_NOMBRE[rutaKey];
-  if (!rutaNombre) return 0;
-  const { data: viaje } = await supabase.from("viajes").select("id").eq("fecha",fecha).eq("tipo","compartido").not("estado","eq","cancelado").maybeSingle();
-  if (!viaje) return 0;
-  const { data: reservas } = await supabase.from("reservas").select("num_asientos").eq("viaje_id",viaje.id).neq("estado","cancelada");
-  return reservas ? reservas.reduce((acc,r) => acc + (r.num_asientos||1), 0) : 0;
 }
 
 // ── Tarifas ───────────────────────────────────────────────────────────────────
@@ -304,19 +295,15 @@ export default function Reservas() {
   const origenId  = origen?.id  || "custom";
   const destinoId = destino?.id || "custom";
 
-  const [fechaComp,    setFechaComp]    = useState("");
-  const [horaComp,     setHoraComp]     = useState("");
   const [fechaVan,     setFechaVan]     = useState("");
   const [horaVan,      setHoraVan]      = useState("");
   const [tipoRuta,     setTipoRuta]     = useState("ida");
   const [horaRegreso,  setHoraRegreso]  = useState("");
   const [horaFlexible, setHoraFlexible] = useState(false);
   const [pasajeros,    setPasajeros]    = useState(1);
-  const [tipoViaje,    setTipoViaje]    = useState("");
   const [modoPago,     setModoPago]     = useState("abono");
   const [enviando,     setEnviando]     = useState(false);
   const [reservaId,    setReservaId]    = useState(null);
-  const [asientosOcupados, setAsientosOcupados] = useState(0);
   const [error,        setError]        = useState("");
   const [calculando,   setCalculando]   = useState(false);
   const [rutaDataDyn,  setRutaDataDyn]  = useState(null);
@@ -329,11 +316,10 @@ export default function Reservas() {
   }, []);
 
   useEffect(() => {
-    const f = fechaComp || fechaVan;
-    if (f) {
+    if (fechaVan) {
       supabase.from("bloqueos").select("*").then(({ data }) => setBloqueos(data || []));
     }
-  }, [fechaComp, fechaVan]);
+  }, [fechaVan]);
 
   const esBloqueadoPorTipo = (fechaStr, tipo) => {
     if (!fechaStr) return false;
@@ -347,23 +333,17 @@ export default function Reservas() {
     });
   };
 
-  // fecha/hora activa según tipo seleccionado
-  const fecha = tipoViaje === "van_completa" ? fechaVan : fechaComp;
-  const hora  = tipoViaje === "van_completa" ? horaVan  : horaComp;
-  const setFecha = tipoViaje === "van_completa" ? setFechaVan : setFechaComp;
-  const setHora  = tipoViaje === "van_completa" ? setHoraVan  : setHoraComp;
+  // Único servicio disponible: van privada
+  const fecha = fechaVan;
+  const hora  = horaVan;
 
-  const fechaSeleccionada = tipoViaje === "van_completa" ? !!fechaVan  : !!fechaComp;
-  const horaSeleccionada  = tipoViaje === "van_completa" ? !!horaVan   : !!horaComp;
-
-  const sinCupoCompartido = esBloqueadoPorTipo(fechaComp, "compartido");
-  const sinCupoPrivado    = esBloqueadoPorTipo(fechaVan,  "privado");
+  const sinCupoPrivado = esBloqueadoPorTipo(fechaVan, "privado");
 
   const topRef = useRef(null);
 
   useEffect(() => { setRutaDataDyn(null); }, [origen, destino]);
   useEffect(() => { setHoraRegreso(""); setHoraFlexible(false); }, [tipoRuta]);
-  useEffect(() => { setHoraRegreso(""); }, [horaComp]);
+  useEffect(() => { setHoraRegreso(""); }, [horaVan]);
 
   const esIdaVuelta = tipoRuta === "ida_vuelta";
 
@@ -373,20 +353,12 @@ export default function Reservas() {
     ? `${origen.label.replace(/^.{3}/,"")} → ${destino.label.replace(/^.{3}/,"")}`
     : "";
 
-  const precioBasePersona = rutaData?.persona || 0;
-  const precioBaseVan     = rutaData?.van     || 0;
-  const precioPersona     = aplicarRecargo(precioBasePersona, esIdaVuelta);
-  const precioVan         = aplicarRecargo(precioBaseVan,     esIdaVuelta);
+  const precioBaseVan = rutaData?.van || 0;
+  const precioVan     = aplicarRecargo(precioBaseVan, esIdaVuelta);
 
-  const montoTotal = !rutaData ? 0
-    : tipoViaje === "van_completa" ? precioVan
-    : precioPersona * pasajeros;
+  const montoTotal = rutaData ? precioVan : 0;
 
-  const aPagar = tipoViaje === "van_completa" && modoPago === "abono"
-    ? montoTotal * 0.5
-    : montoTotal;
-
-  const asientosLibres = Math.max(0, MAX_ASIENTOS - asientosOcupados);
+  const aPagar = modoPago === "abono" ? montoTotal * 0.5 : montoTotal;
 
   const scroll = () => setTimeout(() => topRef.current?.scrollIntoView({ behavior:"smooth", block:"start" }), 40);
   const ir     = (p) => { setPantalla(p); scroll(); };
@@ -394,11 +366,6 @@ export default function Reservas() {
   useEffect(() => {
     if (origen && destino) verTarifas();
   }, [origen, destino]); // eslint-disable-line
-
-  useEffect(() => {
-    if (!rutaKey || !fechaComp || tipoViaje !== "compartido") return;
-    contarAsientosOcupados(rutaKey, fechaComp).then(setAsientosOcupados);
-  }, [rutaKey, fechaComp, tipoViaje]);
 
   const verTarifas = async () => {
     if (!origen || !destino) return;
@@ -426,8 +393,8 @@ export default function Reservas() {
   setError("");
 
   // ── Verificación de bloqueo en tiempo real ──────────────
-  const tipoCheck  = tipoViaje === "van_completa" ? "privado" : "compartido";
-  const fechaCheck = tipoViaje === "van_completa" ? fechaVan  : fechaComp;
+  const tipoCheck  = "privado";
+  const fechaCheck = fechaVan;
 
   // Re-consultar bloqueos frescos desde Supabase
   const { data: bloqueosFrescos } = await supabase.from("bloqueos").select("*");
@@ -443,11 +410,7 @@ export default function Reservas() {
   });
 
   if (estaBloqueado) {
-    setError(
-      tipoCheck === "compartido"
-        ? "El Transfer no está disponible en esta fecha. Puedes reservar una Van Privada."
-        : "La Van Privada no está disponible en esta fecha."
-    );
+    setError("La Van Privada no está disponible en esta fecha.");
     return;
   }
   // ────────────────────────────────────────────────────────
@@ -462,8 +425,8 @@ export default function Reservas() {
     setError(""); setEnviando(true);
     try {
       const grupoId   = esIdaVuelta ? uuid() : null;
-      const tipo      = tipoViaje === "compartido" ? "compartido" : "privado";
-      const precioPax = tipoViaje === "compartido" ? precioPersona : precioVan;
+      const tipo      = "privado";
+      const precioPax = precioVan;
 
       const viajeId = await obtenerOCrearViaje({
         rutaKey, origenId, destinoId, fecha, hora, tipo,
@@ -473,9 +436,7 @@ export default function Reservas() {
       });
 
       const notasIda = [
-        tipoViaje === "van_completa"
-          ? `Van privada · Abono 50%: ${precio(aPagar)} | Total: ${precio(montoTotal)}`
-          : "Compartido",
+        `Van privada · Abono 50%: ${precio(aPagar)} | Total: ${precio(montoTotal)}`,
         esIdaVuelta ? `IDA (grupo: ${grupoId?.slice(0,8)})` : "Solo ida",
       ].join(" · ");
 
@@ -512,29 +473,24 @@ export default function Reservas() {
           num_asientos: Number(pasajeros), estado: "pendiente",
           origen_reserva: "web", tipo_ruta: "ida", grupo_reserva: grupoId,
           hora_flexible: horaFlexible,
-          notas: [tipoViaje === "van_completa" ? "Van privada" : "Compartido",
+          notas: ["Van privada",
             `REGRESO (grupo: ${grupoId?.slice(0,8)})`,
             horaFlexible ? "⏰ Hora flexible — coordinar por WhatsApp" : `Hora: ${horaRegreso}`].join(" · "),
         }]);
       }
 
-      if (tipoViaje === "van_completa") {
-        const edgeFn = `https://pyloifgprupypgkhkqmx.supabase.co/functions/v1/flow-payment/create`;
-        const res    = await fetch(edgeFn, {
-          method:"POST",
-          headers:{ "Content-Type":"application/json", "Authorization":`Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({ reservaId: resIda.id, monto: aPagar, email: usuario?.email || "",
-            descripcion: `Araucanía Viajes · ${rutaLabel} · ${fmt(fecha)} ${hora}${esIdaVuelta?" · Ida y vuelta":""}` }),
-        });
-        const json = await res.json();
-        if (!res.ok || !json.urlPago) throw new Error(json.error || "No se pudo iniciar el pago");
-        setEnviando(false);
-        window.location.href = json.urlPago;
-        return;
-      }
-
+      const edgeFn = `https://pyloifgprupypgkhkqmx.supabase.co/functions/v1/flow-payment/create`;
+      const res    = await fetch(edgeFn, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "Authorization":`Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ reservaId: resIda.id, monto: aPagar, email: usuario?.email || "",
+          descripcion: `Araucanía Viajes · ${rutaLabel} · ${fmt(fecha)} ${hora}${esIdaVuelta?" · Ida y vuelta":""}` }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.urlPago) throw new Error(json.error || "No se pudo iniciar el pago");
       setEnviando(false);
-      ir("ok");
+      window.location.href = json.urlPago;
+      return;
     } catch (e) {
       setError(e.message || "Error al procesar. Intenta de nuevo.");
       setEnviando(false);
@@ -546,14 +502,12 @@ export default function Reservas() {
       ? `\n↩️ *Regreso:* ${fmt(fecha)} · ${horaFlexible ? "Hora a coordinar" : horaRegreso}`
       : "";
     const msg = encodeURIComponent(
-      `🚐 *${tipoViaje==="compartido"?"Reserva Compartida":"Van Completa"} - Araucanía Viajes*\n\n` +
+      `🚐 *Van Completa - Araucanía Viajes*\n\n` +
       `👤 *${usuario?.nombre}* · ${usuario?.telefono}\n` +
       `🗺️ ${rutaLabel}\n📅 ${fmt(fecha)} · 🕐 ${hora}\n` +
       `🎫 ${esIdaVuelta?"Ida y vuelta":"Solo ida"} · 👥 ${pasajeros} pax` +
       regresoTxt + `\n\n💰 Total: ${precio(montoTotal)}\n` +
-      (tipoViaje==="compartido"
-        ? `⏳ *Sin costo ahora — se confirma al completar cupo.*\n`
-        : `💳 Abono 50%: ${precio(aPagar)} — pagado vía Flow\n`) +
+      `💳 Abono 50%: ${precio(aPagar)} — pagado vía Flow\n` +
       `🆔 Ref: ${id}`
     );
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`,"_blank");
@@ -561,8 +515,8 @@ export default function Reservas() {
 
   const reset = () => {
     setPantalla("inicio"); setOrigen(null); setDestino(null);
-    setFechaComp(""); setHoraComp(""); setFechaVan(""); setHoraVan("");
-    setPasajeros(1); setTipoViaje(""); setModoPago("abono");
+    setFechaVan(""); setHoraVan("");
+    setPasajeros(1); setModoPago("abono");
     setTipoRuta("ida"); setHoraRegreso(""); setHoraFlexible(false);
     setReservaId(null); setError(""); scroll();
   };
@@ -582,12 +536,10 @@ export default function Reservas() {
           </div>
           <div style={{ textAlign:"center" }}>
             <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:"clamp(1.2rem,5vw,1.45rem)", fontWeight:800, color:"#1a1611", marginBottom:2 }}>
-              {tipoViaje==="compartido" ? "¡Reserva confirmada!" : "¡Van reservada!"}
+              ¡Van reservada!
             </h2>
             <p style={{ fontSize:"0.76rem", color:"#9a9080", lineHeight:1.4 }}>
-              {tipoViaje==="compartido"
-                ? "Sin costo ahora · Te avisamos cuando se llene el cupo"
-                : "Tu van está reservada"}
+              Tu van está reservada
             </p>
           </div>
         </div>
@@ -628,18 +580,10 @@ export default function Reservas() {
             <div style={{ padding:"10px 16px", borderBottom:"1px solid #D4CBB8" }}>
               <div style={{ fontSize:"0.62rem", color:"#9a9080", fontWeight:700, letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:3 }}>Servicio</div>
               <div style={{ fontSize:"0.8rem", fontWeight:700, color:"#1a1611" }}>
-                {tipoViaje==="compartido" ? "Transfer" : "Van privada"}
+                Van privada
               </div>
               <div style={{ display:"flex", alignItems:"center", gap:2, marginTop:3 }}>
-                {tipoViaje==="compartido"
-                  ? Array.from({ length: Math.min(pasajeros,5) }).map((_,i) => (
-                      <svg key={i} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b5e4e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                      </svg>
-                    ))
-                  : <span style={{ fontSize:"0.7rem", color:"#6b5e4e" }}>Exclusivo</span>
-                }
-                {tipoViaje==="compartido" && pasajeros > 5 && <span style={{ fontSize:"0.68rem", color:"#9a9080" }}>+{pasajeros-5}</span>}
+                <span style={{ fontSize:"0.7rem", color:"#6b5e4e" }}>Exclusivo · {pasajeros} pax</span>
               </div>
             </div>
 
@@ -647,11 +591,8 @@ export default function Reservas() {
             <div style={{ gridColumn:"1/-1", padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div>
                 <div style={{ fontSize:"0.62rem", color:"#9a9080", fontWeight:700, letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:2 }}>
-                  {tipoViaje==="compartido" ? "Total al confirmar cupo" : "Total"}
+                  Total
                 </div>
-                {tipoViaje==="compartido" && (
-                  <div style={{ fontSize:"0.68rem", color:"#16a34a", fontWeight:600 }}>✓ Sin cargo ahora</div>
-                )}
               </div>
               <span style={{ fontSize:"1.45rem", fontWeight:800, color:"#1a1611", letterSpacing:"-0.02em" }}>
                 {precio(montoTotal)}
@@ -742,33 +683,23 @@ export default function Reservas() {
                 <span style={{ fontWeight:700, fontSize:"0.88rem", color:"#1a1611", marginLeft:2 }}>{pasajeros}</span>
               </span>
             }/>
-            <Row label="Tipo" val={tipoViaje==="compartido" ? "Compartido" : "Van privada"}/>
+            <Row label="Tipo" val="Van privada"/>
           </div>
-          {tipoViaje === "van_completa" && (
-            <div style={{ ...S.section, paddingTop:0 }}>
-              <p style={S.sectionLabel}>Modo de pago</p>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                {[
-                  { id:"abono", label:"50% ahora", monto:precio(montoTotal*0.5), sub:"Resto al viajar" },
-                  { id:"total", label:"Pago completo", monto:precio(montoTotal), sub:"Todo ahora" },
-                ].map(m => (
-                  <button key={m.id} className={`pago-opt${modoPago===m.id?" pago-opt-on":""}`} onClick={() => setModoPago(m.id)}>
-                    <span style={{ fontSize:"0.78rem", opacity:0.7 }}>{m.label}</span>
-                    <span style={{ fontSize:"1.05rem", fontWeight:800 }}>{m.monto}</span>
-                    <span style={{ fontSize:"0.68rem", opacity:0.6 }}>{m.sub}</span>
-                  </button>
-                ))}
-              </div>
+          <div style={{ ...S.section, paddingTop:0 }}>
+            <p style={S.sectionLabel}>Modo de pago</p>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+              {[
+                { id:"abono", label:"50% ahora", monto:precio(montoTotal*0.5), sub:"Resto al viajar" },
+                { id:"total", label:"Pago completo", monto:precio(montoTotal), sub:"Todo ahora" },
+              ].map(m => (
+                <button key={m.id} className={`pago-opt${modoPago===m.id?" pago-opt-on":""}`} onClick={() => setModoPago(m.id)}>
+                  <span style={{ fontSize:"0.78rem", opacity:0.7 }}>{m.label}</span>
+                  <span style={{ fontSize:"1.05rem", fontWeight:800 }}>{m.monto}</span>
+                  <span style={{ fontSize:"0.68rem", opacity:0.6 }}>{m.sub}</span>
+                </button>
+              ))}
             </div>
-          )}
-          {tipoViaje === "compartido" && (
-            <div style={S.aviso}>
-              <span style={{ fontSize:"1rem" }}>🕐</span>
-              <span style={{ fontSize:"0.78rem", color:"#92400e", lineHeight:1.5 }}>
-                <strong>Sin costo ahora.</strong> Confirmamos cuando se complete el cupo de {MAX_ASIENTOS} pasajeros. Quedan <strong>{asientosLibres} lugares.</strong>
-              </span>
-            </div>
-          )}
+          </div>
           {esIdaVuelta && horaFlexible && (
             <div style={{ ...S.aviso, background:"rgba(59,130,246,0.08)", border:"1px solid rgba(59,130,246,0.25)", marginBottom:"1rem" }}>
               <span style={{ fontSize:"1rem" }}>💬</span>
@@ -788,22 +719,16 @@ export default function Reservas() {
             </div>
           </div>
           <div style={S.totalBox}>
-            <span style={{ fontSize:"0.85rem", color:"#9a9080" }}>{tipoViaje==="compartido" ? "Total (se cobra al confirmar)" : "A pagar ahora"}</span>
+            <span style={{ fontSize:"0.85rem", color:"#9a9080" }}>A pagar ahora</span>
             <span style={{ fontSize:"clamp(1.3rem,5vw,1.6rem)", fontWeight:800, color:"#1a1611" }}>{precio(aPagar)}</span>
           </div>
           {error && <div style={S.errBox}>⚠️ {error}</div>}
-          {tipoViaje==="compartido" ? (
-            <button className="btn-confirmar" disabled={enviando} onClick={confirmar}>
-              {enviando ? "Procesando..." : `Confirmar${esIdaVuelta && horaFlexible ? " · coordinar regreso por WhatsApp" : ""}`}
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            <button className="btn-flow" disabled={enviando} onClick={confirmar}>
+              {enviando ? <><span className="btn-spinner"/>Procesando...</> : <><IcoLock/>Pagar {precio(aPagar)} con Flow</>}
             </button>
-          ) : (
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-              <button className="btn-flow" disabled={enviando} onClick={confirmar}>
-                {enviando ? <><span className="btn-spinner"/>Procesando...</> : <><IcoLock/>Pagar {precio(aPagar)} con Flow</>}
-              </button>
-              <p style={{ textAlign:"center", fontSize:"0.7rem", color:"#9a9080", lineHeight:1.5 }}>Pago seguro vía Flow.cl · El resto lo pagas el día del viaje</p>
-            </div>
-          )}
+            <p style={{ textAlign:"center", fontSize:"0.7rem", color:"#9a9080", lineHeight:1.5 }}>Pago seguro vía Flow.cl · El resto lo pagas el día del viaje</p>
+          </div>
         </div>
       </div>
     );
@@ -859,207 +784,180 @@ export default function Reservas() {
           />
         </div>
 
-        {/* ── Tarjetas de tipo de servicio (Transfer / Van Privada) ── */}
-        <div style={{ display:"flex", gap:8, marginTop:8 }} className="fade-in">
-          {[
-            { id:"compartido",   icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="8" width="15" height="10" rx="2"/><path d="M16 11l5 2v5h-5V11z"/><circle cx="5.5" cy="18.5" r="1.5"/><circle cx="18.5" cy="18.5" r="1.5"/></svg>, label:"Transfer",   p: rutaData ? precio(precioPersona) : calculando ? "…" : null, sub:"por pasajero" },
-            { id:"van_completa", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3a2 2 0 01-2-2V7a2 2 0 012-2h11l5 7v5h-2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M9 5v7h11"/></svg>, label:"Van Privada", p: rutaData ? precio(precioVan)     : calculando ? "…" : null, sub:"van completa" },
-          ].map(op => {
-            const bloqueada = op.id === "compartido" && sinCupoCompartido;
-            return (
-            <div
-              key={op.id}
-              style={{
-                flex:1, padding:"12px 14px", borderRadius:12,
-                border: bloqueada
-                  ? "1.5px solid #D4CBB8"
-                  : tipoViaje===op.id ? "2px solid #1a1611" : "1.5px solid #D4CBB8",
-                background: bloqueada ? "#F5F2EC" : tipoViaje===op.id ? "#1a1611" : "#EDE5D0",
-                cursor: bloqueada ? "not-allowed" : "pointer",
-                transition:"all .18s",
-                display:"flex", flexDirection:"column", gap:6,
-                opacity: bloqueada ? 0.7 : 1,
-                position:"relative", overflow:"hidden",
-              }}
-              onClick={() => !bloqueada && setTipoViaje(op.id)}
-            >
-              {/* Banda "Sin cupo" cuando está bloqueada */}
-              {bloqueada && (
-                <div style={{
-                  position:"absolute", top:10, right:-20,
-                  color:"#ef4444",
-                  fontSize:"0.58rem", fontWeight:800, letterSpacing:"0.08em",
-                  padding:"2px 28px", transform:"rotate(35deg)",
-                  textTransform:"uppercase", pointerEvents:"none",
-                }}>
-                  Sin cupo
-                </div>
-              )}
+        {/* ── Tarjeta de servicio (Van Privada) ── */}
+        <div style={{ display:"flex", marginTop:8 }} className="fade-in">
+          <div
+            style={{
+              flex:1, padding:"12px 14px", borderRadius:12,
+              border: sinCupoPrivado ? "1.5px solid #D4CBB8" : "2px solid #1a1611",
+              background: sinCupoPrivado ? "#F5F2EC" : "#1a1611",
+              transition:"all .18s",
+              display:"flex", flexDirection:"column", gap:6,
+              opacity: sinCupoPrivado ? 0.7 : 1,
+              position:"relative", overflow:"hidden",
+            }}
+          >
+            {/* Banda "Sin cupo" cuando la fecha está bloqueada */}
+            {sinCupoPrivado && (
+              <div style={{
+                position:"absolute", top:10, right:-20,
+                color:"#ef4444",
+                fontSize:"0.58rem", fontWeight:800, letterSpacing:"0.08em",
+                padding:"2px 28px", transform:"rotate(35deg)",
+                textTransform:"uppercase", pointerEvents:"none",
+              }}>
+                Sin cupo
+              </div>
+            )}
 
-              <span style={{ fontSize:"0.82rem", fontWeight:700, color: bloqueada ? "#B8AFA0" : tipoViaje===op.id?"#F5EDD8":"#6b5e4e", display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ opacity: bloqueada ? 0.5 : 1, color: bloqueada ? "#B8AFA0" : tipoViaje===op.id ? "#F5EDD8" : "#6b5e4e" }}>
-                  {op.icon}
-                </span>
-                {op.label}
+            <span style={{ fontSize:"0.82rem", fontWeight:700, color: sinCupoPrivado ? "#B8AFA0" : "#F5EDD8", display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ opacity: sinCupoPrivado ? 0.5 : 1 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 17H3a2 2 0 01-2-2V7a2 2 0 012-2h11l5 7v5h-2"/>
+                  <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
+                  <path d="M9 5v7h11"/>
+                </svg>
               </span>
+              Van Privada
+            </span>
 
-              {/* Texto de fecha bloqueada */}
-              {bloqueada && fecha && (
-                <span style={{ fontSize:"0.72rem", color:"#B8AFA0", fontWeight:500 }}>
-                  Sin disponibilidad · {new Date(fecha+"T12:00:00").toLocaleDateString("es-CL",{day:"numeric",month:"short"})}
-                </span>
-              )}
+            {/* Texto de fecha bloqueada */}
+            {sinCupoPrivado && fecha && (
+              <span style={{ fontSize:"0.72rem", color:"#B8AFA0", fontWeight:500 }}>
+                Sin disponibilidad · {new Date(fecha+"T12:00:00").toLocaleDateString("es-CL",{day:"numeric",month:"short"})}
+              </span>
+            )}
 
-              {/* ── Fecha + Hora (iconos clicables) ── */}
-              <div onClick={e => e.stopPropagation()} style={{ display:"flex", alignItems:"center", gap:8 }}>
+            {/* ── Fecha + Hora (iconos clicables) ── */}
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
 
-                {/* Ícono calendario + texto día/mes */}
-                <div style={{ position:"relative", display:"flex", alignItems:"center", gap:5, cursor:"pointer" }}>
-                  <div className={origen && destino && tipoViaje===op.id && !(op.id==="van_completa"?fechaVan:fechaComp) && !bloqueada ? "ico-pulse-red" : ""}>
-                    <IcoCal size={22} c={(() => {
-                      const f = op.id === "van_completa" ? fechaVan : fechaComp;
-                      if (bloqueada) return "#C8BEA8";
-                      if (origen && destino && tipoViaje===op.id && !f) return "#ef4444";
-                      if (tipoViaje===op.id && f) return "#22c55e";
-                      if (tipoViaje===op.id) return "#F5EDD8";
-                      return "#9a9080";
-                    })()}/>
-                  </div>
-                  {(op.id === "van_completa" ? fechaVan : fechaComp) && (
-                    <span style={{
-                      fontSize:"0.78rem", fontWeight:700, lineHeight:1,
-                      color: bloqueada ? "#B8AFA0" : tipoViaje===op.id ? "#F5EDD8" : "#1a1611",
-                      pointerEvents:"none",
-                    }}>
-                      {new Date((op.id === "van_completa" ? fechaVan : fechaComp) + "T12:00:00").toLocaleDateString("es-CL", { day:"numeric", month:"short" })}
-                    </span>
-                  )}
-                  <input
-                    type="date"
-                    min={hoy}
-                    value={op.id === "van_completa" ? fechaVan : fechaComp}
-                    onChange={e => op.id === "van_completa" ? setFechaVan(e.target.value) : setFechaComp(e.target.value)}
-                    style={{ position:"absolute", opacity:0, cursor:"pointer", top:0, left:0, width:"100%", height:"100%", fontSize:16 }}
-                  />
+              {/* Ícono calendario + texto día/mes */}
+              <div style={{ position:"relative", display:"flex", alignItems:"center", gap:5, cursor:"pointer" }}>
+                <div className={origen && destino && !fechaVan && !sinCupoPrivado ? "ico-pulse-red" : ""}>
+                  <IcoCal size={22} c={(() => {
+                    if (sinCupoPrivado) return "#C8BEA8";
+                    if (origen && destino && !fechaVan) return "#ef4444";
+                    if (fechaVan) return "#22c55e";
+                    return "#F5EDD8";
+                  })()}/>
                 </div>
-
-                <div style={{ width:1, height:16, background: tipoViaje===op.id?"rgba(245,237,216,0.3)":"#D4CBB8", flexShrink:0 }}/>
-
-                {/* Ícono reloj + texto hora */}
-                <div style={{ position:"relative", display:"flex", alignItems:"center", gap:5, cursor:"pointer" }}>
-                  <div className={origen && destino && tipoViaje===op.id && !!(op.id==="van_completa"?fechaVan:fechaComp) && !(op.id==="van_completa"?horaVan:horaComp) ? "ico-pulse-red" : ""}>
-                    <svg
-                      width="22" height="22" viewBox="0 0 24 24" fill="none"
-                      stroke={(() => {
-                        const f = op.id === "van_completa" ? fechaVan : fechaComp;
-                        const h = op.id === "van_completa" ? horaVan  : horaComp;
-                        if (bloqueada) return "#C8BEA8";
-                        if (origen && destino && tipoViaje===op.id && f && !h) return "#ef4444";
-                        if (tipoViaje===op.id && h) return "#22c55e";
-                        if (tipoViaje===op.id) return "#F5EDD8";
-                        return "#9a9080";
-                      })()}
-                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-                    </svg>
-                  </div>
-                  {(op.id === "van_completa" ? horaVan : horaComp) && (
-                    <span style={{
-                      fontSize:"0.78rem", fontWeight:700, lineHeight:1,
-                      color: tipoViaje===op.id ? "#F5EDD8" : "#1a1611",
-                      pointerEvents:"none",
-                    }}>
-                      {op.id === "van_completa" ? horaVan : horaComp}
-                    </span>
-                  )}
-                  <select
-                    value={op.id === "van_completa" ? horaVan : horaComp}
-                    onChange={e => op.id === "van_completa" ? setHoraVan(e.target.value) : setHoraComp(e.target.value)}
-                    style={{ position:"absolute", opacity:0, cursor:"pointer", top:0, left:0, width:"100%", height:"100%", fontSize:16 }}
-                  >
-                    <option value="">—</option>
-                    {HORAS_BASE.map(h => <option key={h} value={h}>{h}</option>)}
-                  </select>
-                </div>
+                {fechaVan && (
+                  <span style={{
+                    fontSize:"0.78rem", fontWeight:700, lineHeight:1,
+                    color: sinCupoPrivado ? "#B8AFA0" : "#F5EDD8",
+                    pointerEvents:"none",
+                  }}>
+                    {new Date(fechaVan + "T12:00:00").toLocaleDateString("es-CL", { day:"numeric", month:"short" })}
+                  </span>
+                )}
+                <input
+                  type="date"
+                  min={hoy}
+                  value={fechaVan}
+                  onChange={e => setFechaVan(e.target.value)}
+                  style={{ position:"absolute", opacity:0, cursor:"pointer", top:0, left:0, width:"100%", height:"100%", fontSize:16 }}
+                />
               </div>
 
-              {/* Precio + contador pasajeros (solo Transfer) */}
-              <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginTop:2 }}>
-                <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
-                  {op.p && (
-                    <span style={{ fontSize:"1.1rem", fontWeight:800, lineHeight:1, color: tipoViaje===op.id?"#F5EDD8":"#1a1611" }}>
-                      {op.p}
-                    </span>
-                  )}
-                  <span style={{ fontSize:"0.72rem", color: tipoViaje===op.id?"rgba(245,237,216,0.7)":"#9a9080" }}>
-                    {op.sub}
+              <div style={{ width:1, height:16, background:"rgba(245,237,216,0.3)", flexShrink:0 }}/>
+
+              {/* Ícono reloj + texto hora */}
+              <div style={{ position:"relative", display:"flex", alignItems:"center", gap:5, cursor:"pointer" }}>
+                <div className={origen && destino && !!fechaVan && !horaVan ? "ico-pulse-red" : ""}>
+                  <svg
+                    width="22" height="22" viewBox="0 0 24 24" fill="none"
+                    stroke={(() => {
+                      if (sinCupoPrivado) return "#C8BEA8";
+                      if (origen && destino && fechaVan && !horaVan) return "#ef4444";
+                      if (horaVan) return "#22c55e";
+                      return "#F5EDD8";
+                    })()}
+                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                  </svg>
+                </div>
+                {horaVan && (
+                  <span style={{ fontSize:"0.78rem", fontWeight:700, lineHeight:1, color:"#F5EDD8", pointerEvents:"none" }}>
+                    {horaVan}
+                  </span>
+                )}
+                <select
+                  value={horaVan}
+                  onChange={e => setHoraVan(e.target.value)}
+                  style={{ position:"absolute", opacity:0, cursor:"pointer", top:0, left:0, width:"100%", height:"100%", fontSize:16 }}
+                >
+                  <option value="">—</option>
+                  {HORAS_BASE.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Precio + contador de pasajeros */}
+            <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginTop:2 }}>
+              <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
+                {(rutaData || calculando) && (
+                  <span style={{ fontSize:"1.1rem", fontWeight:800, lineHeight:1, color:"#F5EDD8" }}>
+                    {rutaData ? precio(precioVan) : "…"}
+                  </span>
+                )}
+                <span style={{ fontSize:"0.72rem", color:"rgba(245,237,216,0.7)" }}>
+                  van completa · hasta {MAX_PAX_VAN} pasajeros
+                </span>
+              </div>
+
+              <div style={{ display:"flex", alignItems:"center", gap:3 }}>
+                {/* Botón − */}
+                <button
+                  onClick={() => setPasajeros(p => Math.max(1, p - 1))}
+                  disabled={pasajeros <= 1}
+                  style={{
+                    width:20, height:20, borderRadius:6,
+                    border:"none",
+                    background:"transparent",
+                    color:"rgba(245,237,216,0.5)",
+                    fontSize:"1rem", fontWeight:400, lineHeight:1,
+                    cursor: pasajeros <= 1 ? "not-allowed" : "pointer",
+                    opacity: pasajeros <= 1 ? 0.3 : 1,
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    transition:"all .15s", flexShrink:0, padding:0,
+                  }}
+                >−</button>
+
+                {/* Ícono persona + número */}
+                <div style={{ display:"flex", alignItems:"center", gap:3 }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                    stroke="#F5EDD8"
+                    strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  <span style={{ fontSize:"0.85rem", fontWeight:800, lineHeight:1, color:"#F5EDD8", minWidth:12, textAlign:"center" }}>
+                    {pasajeros}
                   </span>
                 </div>
 
-                {op.id === "compartido" && (
-                  <div
-                    onClick={e => e.stopPropagation()}
-                    style={{ display:"flex", alignItems:"center", gap:3 }}
-                  >
-                    {/* Botón − */}
-                    <button
-                      onClick={() => setPasajeros(p => Math.max(1, p - 1))}
-                      disabled={pasajeros <= 1}
-                      style={{
-                        width:20, height:20, borderRadius:6,
-                        border:"none",
-                        background:"transparent",
-                        color: tipoViaje===op.id ? "rgba(245,237,216,0.5)" : "#B8AFA0",
-                        fontSize:"1rem", fontWeight:400, lineHeight:1,
-                        cursor: pasajeros <= 1 ? "not-allowed" : "pointer",
-                        opacity: pasajeros <= 1 ? 0.3 : 1,
-                        display:"flex", alignItems:"center", justifyContent:"center",
-                        transition:"all .15s", flexShrink:0, padding:0,
-                      }}
-                    >−</button>
-
-                    {/* Ícono persona + número */}
-                    <div style={{ display:"flex", alignItems:"center", gap:3 }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                        stroke={tipoViaje===op.id ? "#F5EDD8" : "#1a1611"}
-                        strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                      </svg>
-                      <span style={{
-                        fontSize:"0.85rem", fontWeight:800, lineHeight:1,
-                        color: tipoViaje===op.id ? "#F5EDD8" : "#1a1611",
-                        minWidth:12, textAlign:"center",
-                      }}>
-                        {pasajeros}
-                      </span>
-                    </div>
-
-                    {/* Botón + */}
-                    <button
-                      onClick={() => setPasajeros(p => Math.min(MAX_ASIENTOS, p + 1))}
-                      disabled={pasajeros >= MAX_ASIENTOS}
-                      style={{
-                        width:20, height:20, borderRadius:6,
-                        border:"none",
-                        background:"transparent",
-                        color: tipoViaje===op.id ? "rgba(245,237,216,0.5)" : "#B8AFA0",
-                        fontSize:"1rem", fontWeight:400, lineHeight:1,
-                        cursor: pasajeros >= MAX_ASIENTOS ? "not-allowed" : "pointer",
-                        opacity: pasajeros >= MAX_ASIENTOS ? 0.3 : 1,
-                        display:"flex", alignItems:"center", justifyContent:"center",
-                        transition:"all .15s", flexShrink:0, padding:0,
-                      }}
-                    >+</button>
-                  </div>
-                )}
+                {/* Botón + */}
+                <button
+                  onClick={() => setPasajeros(p => Math.min(MAX_PAX_VAN, p + 1))}
+                  disabled={pasajeros >= MAX_PAX_VAN}
+                  style={{
+                    width:20, height:20, borderRadius:6,
+                    border:"none",
+                    background:"transparent",
+                    color:"rgba(245,237,216,0.5)",
+                    fontSize:"1rem", fontWeight:400, lineHeight:1,
+                    cursor: pasajeros >= MAX_PAX_VAN ? "not-allowed" : "pointer",
+                    opacity: pasajeros >= MAX_PAX_VAN ? 0.3 : 1,
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    transition:"all .15s", flexShrink:0, padding:0,
+                  }}
+                >+</button>
               </div>
             </div>
-            );
-          })}
+          </div>
         </div>
-        {/* ── FIN tarjetas ── */}
+        {/* ── FIN tarjeta ── */}
 
         {/* ── Regreso (ida y vuelta) ── */}
         {esIdaVuelta && (
@@ -1111,9 +1009,9 @@ export default function Reservas() {
           <button
             className={enviando ? "btn-confirmar btn-confirmar-loading" : "btn-confirmar"}
             disabled={
-              !origen || !destino || !fecha || !hora || !tipoViaje || calculando || enviando ||
+              !origen || !destino || !fecha || !hora || calculando || enviando ||
               (esIdaVuelta && !horaFlexible && !horaRegreso) ||
-              (tipoViaje === "compartido" && sinCupoCompartido)
+              sinCupoPrivado
             }
             onClick={reservarDirecto}
           >
@@ -1121,19 +1019,12 @@ export default function Reservas() {
               ? <><span className="btn-spinner" style={{ marginRight:8 }}/> Procesando…</>
               : calculando
                 ? <><span className="btn-spinner" style={{ marginRight:8 }}/> Calculando…</>
-                : !tipoViaje
-                  ? "Selecciona Transfer o Van Privada"
-                  : tipoViaje === "compartido"
-                    ? rutaData ? `Reservar asiento — ${precio(precioPersona * pasajeros)}` : "Reservar asiento"
-                    : rutaData ? `Pagar abono — ${precio(precioVan * 0.5)}` : "Reservar van"
+                : sinCupoPrivado
+                  ? "Sin disponibilidad en esa fecha"
+                  : rutaData ? `Pagar abono — ${precio(precioVan * 0.5)}` : "Reservar van"
             }
           </button>
-          {tipoViaje === "compartido" && origen && destino && (
-            <p style={{ textAlign:"center", fontSize:"0.72rem", color:"#9a9080", lineHeight:1.5 }}>
-              Sin costo ahora · Confirmamos cuando se llene el cupo de {MAX_ASIENTOS} pax
-            </p>
-          )}
-          {tipoViaje === "van_completa" && origen && destino && (
+          {origen && destino && (
             <p style={{ textAlign:"center", fontSize:"0.70rem", color:"#9a9080", lineHeight:1.5 }}>
               Pago seguro vía Flow.cl · El resto lo pagas el día del viaje
             </p>
@@ -1142,11 +1033,6 @@ export default function Reservas() {
         </div>
 
         {/* ── Mensajes de validación ── */}
-        {!tipoViaje && origen && destino && fecha && hora && (
-          <p style={{ textAlign:"center", fontSize:"0.72rem", color:"#c0290e", marginTop:6 }}>
-            Elige Transfer o Van Privada para continuar
-          </p>
-        )}
         {esIdaVuelta && !horaFlexible && !horaRegreso && hora && (
           <p style={{ textAlign:"center", fontSize:"0.72rem", color:"#c0290e", marginTop:6 }}>
             Elige hora de regreso o activa "No sé la hora exacta"
@@ -1158,15 +1044,15 @@ export default function Reservas() {
           <p style={S.sectionLabel}>Destinos</p>
           <div style={{ display:"flex", flexDirection:"column" }}>
             {[
-              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[1], label:"Temuco ZCO → Pucón",        meta:`~95 km · desde ${precio(paxDesdeVan(95000))}/pax · van ${precio(95000)}`,  ico:"plane"    },
-              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[2], label:"Temuco ZCO → Villarrica",   meta:`~80 km · desde ${precio(paxDesdeVan(80000))}/pax · van ${precio(80000)}`,  ico:"plane"    },
-              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[3], label:"Temuco ZCO → Panguipulli",  meta:`~110 km · desde ${precio(paxDesdeVan(110000))}/pax · van ${precio(110000)}`, ico:"plane"  },
-              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[4], label:"Temuco ZCO → Valdivia",     meta:`~140 km · desde ${precio(paxDesdeVan(140000))}/pax · van ${precio(140000)}`, ico:"plane"  },
-              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[5], label:"Temuco ZCO → Victoria",     meta:`~90 km · desde ${precio(paxDesdeVan(90000))}/pax · van ${precio(90000)}`,  ico:"plane"    },
-              { o:PUNTOS_FRECUENTES[1], d:PUNTOS_FRECUENTES[0], label:"Pucón → Temuco ZCO",        meta:`~95 km · desde ${precio(paxDesdeVan(95000))}/pax · van ${precio(95000)}`,  ico:"mountain" },
-              { o:PUNTOS_FRECUENTES[2], d:PUNTOS_FRECUENTES[0], label:"Villarrica → Temuco ZCO",   meta:`~80 km · desde ${precio(paxDesdeVan(80000))}/pax · van ${precio(80000)}`,  ico:"city"     },
-              { o:PUNTOS_FRECUENTES[3], d:PUNTOS_FRECUENTES[0], label:"Panguipulli → Temuco ZCO",  meta:`~110 km · desde ${precio(paxDesdeVan(110000))}/pax · van ${precio(110000)}`, ico:"city"   },
-              { o:PUNTOS_FRECUENTES[4], d:PUNTOS_FRECUENTES[0], label:"Valdivia → Temuco ZCO",     meta:`~140 km · desde ${precio(paxDesdeVan(140000))}/pax · van ${precio(140000)}`, ico:"city"   },
+              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[1], label:"Temuco ZCO → Pucón",        meta:`~95 km · van privada ${precio(95000)}`,  ico:"plane"    },
+              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[2], label:"Temuco ZCO → Villarrica",   meta:`~80 km · van privada ${precio(80000)}`,  ico:"plane"    },
+              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[3], label:"Temuco ZCO → Panguipulli",  meta:`~110 km · van privada ${precio(110000)}`, ico:"plane"  },
+              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[4], label:"Temuco ZCO → Valdivia",     meta:`~140 km · van privada ${precio(140000)}`, ico:"plane"  },
+              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[5], label:"Temuco ZCO → Victoria",     meta:`~90 km · van privada ${precio(90000)}`,  ico:"plane"    },
+              { o:PUNTOS_FRECUENTES[1], d:PUNTOS_FRECUENTES[0], label:"Pucón → Temuco ZCO",        meta:`~95 km · van privada ${precio(95000)}`,  ico:"mountain" },
+              { o:PUNTOS_FRECUENTES[2], d:PUNTOS_FRECUENTES[0], label:"Villarrica → Temuco ZCO",   meta:`~80 km · van privada ${precio(80000)}`,  ico:"city"     },
+              { o:PUNTOS_FRECUENTES[3], d:PUNTOS_FRECUENTES[0], label:"Panguipulli → Temuco ZCO",  meta:`~110 km · van privada ${precio(110000)}`, ico:"city"   },
+              { o:PUNTOS_FRECUENTES[4], d:PUNTOS_FRECUENTES[0], label:"Valdivia → Temuco ZCO",     meta:`~140 km · van privada ${precio(140000)}`, ico:"city"   },
             ].map((r,i) => (
               <button key={i} className="ruta-row" onClick={() => { setOrigen(r.o); setDestino(r.d); }}>
                 <div style={S.rutaIcoSmall}>

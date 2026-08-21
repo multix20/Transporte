@@ -17,18 +17,7 @@ const paxDesdeVan = (precioVan) =>
 const aplicarRecargo = (monto, esIdaVuelta) =>
   esIdaVuelta ? Math.round(monto * RECARGO_IDA_VUELTA) : monto;
 
-const uuid = () => crypto.randomUUID?.() ||
-  "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0;
-    return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
-  });
-
 const HORAS_BASE = Array.from({ length: 17 }, (_, i) => `${String(i + 6).padStart(2,"0")}:00`);
-const horasRetorno = (horaIda) => {
-  if (!horaIda) return HORAS_BASE;
-  const hh = parseInt(horaIda.split(":")[0]);
-  return HORAS_BASE.filter(h => parseInt(h) >= hh + 2);
-};
 
 // ── Hook: sesión y perfil ─────────────────────────────────────────────────────
 function useUsuario() {
@@ -89,32 +78,11 @@ function useAddressHistory() {
   return { historial, guardar, eliminar };
 }
 
-const RUTA_NOMBRE = {
-  "pucon-aeropuerto":      "Pucón → Temuco ZCO",
-  "villarrica-aeropuerto": "Villarrica → Temuco ZCO",
-  "aeropuerto-pucon":      "Temuco ZCO → Pucón",
-  "aeropuerto-villarrica": "Temuco ZCO → Villarrica",
-};
-
 const fmt    = (str) => { if (!str) return ""; const [y,m,d]=str.split("-"); return new Date(y,m-1,d).toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"}); };
 const precio = (n)   => `$${Math.round(n).toLocaleString("es-CL")}`;
 const hoy    = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
 // ── Iconos SVG ────────────────────────────────────────────────────────────────
-const IcoVan = ({ size=28, c="#1a1611" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 17H3a2 2 0 01-2-2V7a2 2 0 012-2h11l5 7v5h-2"/>
-    <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
-    <path d="M9 5v7h11"/>
-  </svg>
-);
-const IcoBus = ({ size=28, c="#1a1611" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="5" width="20" height="13" rx="2"/>
-    <path d="M2 10h20 M7 18v2 M17 18v2"/>
-    <circle cx="7" cy="14" r="1" fill={c}/><circle cx="17" cy="14" r="1" fill={c}/>
-  </svg>
-);
 const IcoChevron = ({ dir="right", c="#9a9080", size=16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
     style={{ transform: dir==="left"?"rotate(180deg)":dir==="down"?"rotate(90deg)":"none" }}>
@@ -131,41 +99,12 @@ const IcoWA = () => (
     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
   </svg>
 );
-const IcoLock = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="11" width="18" height="11" rx="2"/>
-    <path d="M7 11V7a5 5 0 0110 0v4"/>
-  </svg>
-);
 const IcoCal = ({ size=15, c="#9a9080" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="4" width="18" height="18" rx="2"/>
     <path d="M16 2v4 M8 2v4 M3 10h18"/>
   </svg>
 );
-
-// ── Helpers Supabase ──────────────────────────────────────────────────────────
-async function obtenerOCrearViaje({ rutaKey, origenId, destinoId, fecha, hora, tipo, precio_por_pax, origenLabel, destinoLabel }) {
-  const rutaNombre = RUTA_NOMBRE[rutaKey] || `${origenLabel || origenId} → ${destinoLabel || destinoId}`;
-  const { data: rutaExistente } = await supabase.from("rutas").select("id").eq("nombre", rutaNombre).maybeSingle();
-  let rutaId = rutaExistente?.id;
-  if (!rutaId) {
-    const { data: nuevaRuta, error: errRuta } = await supabase.from("rutas")
-      .insert({ nombre:rutaNombre, origen:origenLabel||"", destino:destinoLabel||"", activa:true })
-      .select("id").single();
-    if (errRuta) throw new Error("No se pudo crear la ruta");
-    rutaId = nuevaRuta?.id;
-  }
-  if (!rutaId) throw new Error("No se pudo obtener la ruta");
-  const { data: viajeExistente } = await supabase.from("viajes").select("id, capacidad, estado")
-    .eq("ruta_id", rutaId).eq("fecha", fecha).eq("tipo", tipo).not("estado","eq","cancelado").maybeSingle();
-  if (viajeExistente) return viajeExistente.id;
-  const { data: nuevoViaje, error } = await supabase.from("viajes")
-    .insert({ ruta_id:rutaId, tipo, fecha, hora_salida: hora || "08:00", capacidad: MAX_PAX_VAN, precio_por_pax, estado:"en_espera" })
-    .select("id").single();
-  if (error) throw new Error("No se pudo crear el viaje");
-  return nuevoViaje.id;
-}
 
 // ── Tarifas ───────────────────────────────────────────────────────────────────
 const ZONAS = [
@@ -285,7 +224,7 @@ const PUNTOS_FRECUENTES = [
 // COMPONENTE PRINCIPAL
 // ════════════════════════════════════════════════════════════════════════════
 export default function Reservas() {
-  const { usuario, cargando: cargandoAuth } = useUsuario();
+  const { usuario } = useUsuario();
   const { historial, guardar, eliminar }    = useAddressHistory();
 
   const [pantalla,  setPantalla]  = useState("inicio");
@@ -298,12 +237,9 @@ export default function Reservas() {
   const [fechaVan,     setFechaVan]     = useState("");
   const [horaVan,      setHoraVan]      = useState("");
   const [tipoRuta,     setTipoRuta]     = useState("ida");
+  const [fechaRegreso, setFechaRegreso] = useState("");
   const [horaRegreso,  setHoraRegreso]  = useState("");
-  const [horaFlexible, setHoraFlexible] = useState(false);
   const [pasajeros,    setPasajeros]    = useState(1);
-  const [modoPago,     setModoPago]     = useState("abono");
-  const [enviando,     setEnviando]     = useState(false);
-  const [reservaId,    setReservaId]    = useState(null);
   const [error,        setError]        = useState("");
   const [calculando,   setCalculando]   = useState(false);
   const [rutaDataDyn,  setRutaDataDyn]  = useState(null);
@@ -316,10 +252,10 @@ export default function Reservas() {
   }, []);
 
   useEffect(() => {
-    if (fechaVan) {
+    if (fechaVan || fechaRegreso) {
       supabase.from("bloqueos").select("*").then(({ data }) => setBloqueos(data || []));
     }
-  }, [fechaVan]);
+  }, [fechaVan, fechaRegreso]);
 
   const esBloqueadoPorTipo = (fechaStr, tipo) => {
     if (!fechaStr) return false;
@@ -338,27 +274,25 @@ export default function Reservas() {
   const hora  = horaVan;
 
   const sinCupoPrivado = esBloqueadoPorTipo(fechaVan, "privado");
+  const sinCupoRegreso = esBloqueadoPorTipo(fechaRegreso, "privado");
 
   const topRef = useRef(null);
 
   useEffect(() => { setRutaDataDyn(null); }, [origen, destino]);
-  useEffect(() => { setHoraRegreso(""); setHoraFlexible(false); }, [tipoRuta]);
-  useEffect(() => { setHoraRegreso(""); }, [horaVan]);
+  useEffect(() => { if (tipoRuta === "ida") { setFechaRegreso(""); setHoraRegreso(""); } }, [tipoRuta]);
 
   const esIdaVuelta = tipoRuta === "ida_vuelta";
 
   const rutaKey   = origen?.id && destino?.id ? `${origen.id}-${destino.id}` : null;
   const rutaData  = rutaDataDyn;
   const rutaLabel = origen && destino
-    ? `${origen.label.replace(/^.{3}/,"")} → ${destino.label.replace(/^.{3}/,"")}`
+    ? `${origen.label} → ${destino.label}`
     : "";
 
   const precioBaseVan = rutaData?.van || 0;
   const precioVan     = aplicarRecargo(precioBaseVan, esIdaVuelta);
 
   const montoTotal = rutaData ? precioVan : 0;
-
-  const aPagar = modoPago === "abono" ? montoTotal * 0.5 : montoTotal;
 
   const scroll = () => setTimeout(() => topRef.current?.scrollIntoView({ behavior:"smooth", block:"start" }), 40);
   const ir     = (p) => { setPantalla(p); scroll(); };
@@ -382,147 +316,49 @@ export default function Reservas() {
     }
   };
 
-  // ── Navegar directo a confirmar calculando tarifas si hace falta ──────────
-  // ── Reservar directo sin pantalla de confirmación ──────────────────────
-  const reservarDirecto = async () => {
-  if (!usuario) {
-    setError("Debes iniciar sesión para reservar.");
-    document.querySelector(".hdr__signin, .hdr__register")?.click();
-    return;
-  }
-  setError("");
-
-  // ── Verificación de bloqueo en tiempo real ──────────────
-  const tipoCheck  = "privado";
-  const fechaCheck = fechaVan;
-
-  // Re-consultar bloqueos frescos desde Supabase
-  const { data: bloqueosFrescos } = await supabase.from("bloqueos").select("*");
-  const bloqueosActuales = bloqueosFrescos || [];
-
-  const estaBloqueado = bloqueosActuales.some(b => {
-    const afecta = !b.aplica_a || b.aplica_a === "ambos" || b.aplica_a === tipoCheck;
-    if (!afecta) return false;
-    const f = new Date(fechaCheck + "T12:00:00");
-    if (b.tipo === "dia") return b.fecha === fechaCheck;
-    if (b.tipo === "mes") return b.mes === f.getMonth()+1 && b.anio === f.getFullYear();
-    return false;
-  });
-
-  if (estaBloqueado) {
-    setError("La Van Privada no está disponible en esta fecha.");
-    return;
-  }
-  // ────────────────────────────────────────────────────────
-
-  if (!rutaData) {
-    await verTarifas();
-  }
-  await confirmar();
-};
-
-  const confirmar = async () => {
-    setError(""); setEnviando(true);
-    try {
-      const grupoId   = esIdaVuelta ? uuid() : null;
-      const tipo      = "privado";
-      const precioPax = precioVan;
-
-      const viajeId = await obtenerOCrearViaje({
-        rutaKey, origenId, destinoId, fecha, hora, tipo,
-        precio_por_pax: precioPax,
-        origenLabel:  origen?.label  || "",
-        destinoLabel: destino?.label || "",
-      });
-
-      const notasIda = [
-        `Van privada · Abono 50%: ${precio(aPagar)} | Total: ${precio(montoTotal)}`,
-        esIdaVuelta ? `IDA (grupo: ${grupoId?.slice(0,8)})` : "Solo ida",
-      ].join(" · ");
-
-      const { data: resIda, error: dbErr } = await supabase
-        .from("reservas")
-        .insert([{
-          viaje_id: viajeId,
-          nombre:   usuario?.nombre   || "",
-          email:    usuario?.email    || "",
-          telefono: usuario?.telefono || "",
-          num_asientos:   Number(pasajeros),
-          estado:         "pendiente",
-          origen_reserva: "web",
-          tipo_ruta:      tipoRuta,
-          grupo_reserva:  grupoId,
-          notas:          notasIda,
-        }])
-        .select().single();
-
-      if (dbErr) throw new Error("Error al guardar la reserva de ida");
-      setReservaId(resIda.id);
-
-      if (esIdaVuelta) {
-        const rutaKeyRet = `${destinoId}-${origenId}`;
-        const viajeIdRet = await obtenerOCrearViaje({
-          rutaKey: rutaKeyRet, origenId: destinoId, destinoId: origenId,
-          fecha, hora: horaRegreso || hora, tipo, precio_por_pax: precioPax,
-          origenLabel: destino?.label || "", destinoLabel: origen?.label || "",
-        });
-        await supabase.from("reservas").insert([{
-          viaje_id: viajeIdRet,
-          nombre: usuario?.nombre || "", email: usuario?.email || "",
-          telefono: usuario?.telefono || "",
-          num_asientos: Number(pasajeros), estado: "pendiente",
-          origen_reserva: "web", tipo_ruta: "ida", grupo_reserva: grupoId,
-          hora_flexible: horaFlexible,
-          notas: ["Van privada",
-            `REGRESO (grupo: ${grupoId?.slice(0,8)})`,
-            horaFlexible ? "⏰ Hora flexible — coordinar por WhatsApp" : `Hora: ${horaRegreso}`].join(" · "),
-        }]);
-      }
-
-      const edgeFn = `https://pyloifgprupypgkhkqmx.supabase.co/functions/v1/flow-payment/create`;
-      const res    = await fetch(edgeFn, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json", "Authorization":`Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ reservaId: resIda.id, monto: aPagar, email: usuario?.email || "",
-          descripcion: `Araucanía Viajes · ${rutaLabel} · ${fmt(fecha)} ${hora}${esIdaVuelta?" · Ida y vuelta":""}` }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.urlPago) throw new Error(json.error || "No se pudo iniciar el pago");
-      setEnviando(false);
-      window.location.href = json.urlPago;
-      return;
-    } catch (e) {
-      setError(e.message || "Error al procesar. Intenta de nuevo.");
-      setEnviando(false);
-    }
+  // ── Reservar: se cierra por WhatsApp, sin pago online ─────────────────────
+  const mensajeWhatsApp = () => {
+    const linea = (f, h) => `${fmt(f)}${h ? ` · ${h}` : " · hora a coordinar"}`;
+    const quien = usuario
+      ? `👤 *${usuario.nombre}*${usuario.telefono ? ` · ${usuario.telefono}` : ""}\n`
+      : "";
+    return encodeURIComponent(
+      `🚐 *Reserva Van Privada — Araucanía Viajes*\n\n` +
+      quien +
+      `🗺️ ${rutaLabel}\n` +
+      `📅 Ida: ${linea(fechaVan, horaVan)}\n` +
+      (esIdaVuelta ? `↩️ Regreso: ${linea(fechaRegreso, horaRegreso)}\n` : "") +
+      `👥 ${pasajeros} ${pasajeros === 1 ? "pasajero" : "pasajeros"}\n` +
+      `🎫 ${esIdaVuelta ? "Ida y vuelta" : "Solo ida"}\n` +
+      (rutaData ? `💰 Valor referencial: ${precio(montoTotal)}\n` : "") +
+      `\n¿Me confirmas disponibilidad y horario?`
+    );
   };
 
-  const abrirWhatsApp = (id) => {
-    const regresoTxt = esIdaVuelta
-      ? `\n↩️ *Regreso:* ${fmt(fecha)} · ${horaFlexible ? "Hora a coordinar" : horaRegreso}`
-      : "";
-    const msg = encodeURIComponent(
-      `🚐 *Van Completa - Araucanía Viajes*\n\n` +
-      `👤 *${usuario?.nombre}* · ${usuario?.telefono}\n` +
-      `🗺️ ${rutaLabel}\n📅 ${fmt(fecha)} · 🕐 ${hora}\n` +
-      `🎫 ${esIdaVuelta?"Ida y vuelta":"Solo ida"} · 👥 ${pasajeros} pax` +
-      regresoTxt + `\n\n💰 Total: ${precio(montoTotal)}\n` +
-      `💳 Abono 50%: ${precio(aPagar)} — pagado vía Flow\n` +
-      `🆔 Ref: ${id}`
-    );
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`,"_blank");
+  const abrirWhatsApp = () => {
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${mensajeWhatsApp()}`, "_blank");
+  };
+
+  const reservar = () => {
+    setError("");
+    if (!origen || !destino)  { setError("Elige origen y destino."); return; }
+    if (!fechaVan)            { setError("Elige la fecha de ida."); return; }
+    if (sinCupoPrivado)       { setError("La Van Privada no está disponible en esa fecha."); return; }
+    if (esIdaVuelta && !fechaRegreso) { setError("Elige la fecha de regreso."); return; }
+    if (sinCupoRegreso)       { setError("La fecha de regreso no está disponible."); return; }
+    abrirWhatsApp();
+    ir("ok");
   };
 
   const reset = () => {
     setPantalla("inicio"); setOrigen(null); setDestino(null);
-    setFechaVan(""); setHoraVan("");
-    setPasajeros(1); setModoPago("abono");
-    setTipoRuta("ida"); setHoraRegreso(""); setHoraFlexible(false);
-    setReservaId(null); setError(""); scroll();
+    setFechaVan(""); setHoraVan(""); setPasajeros(1);
+    setTipoRuta("ida"); setFechaRegreso(""); setHoraRegreso("");
+    setError(""); scroll();
   };
 
   // ════════════════════════════════════════════════════════════════════════════
-  // PANTALLA: OK
+  // PANTALLA: OK — la venta se cierra por WhatsApp
   // ════════════════════════════════════════════════════════════════════════════
   if (pantalla === "ok") return (
     <div ref={topRef} style={S.root}>
@@ -536,10 +372,10 @@ export default function Reservas() {
           </div>
           <div style={{ textAlign:"center" }}>
             <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:"clamp(1.2rem,5vw,1.45rem)", fontWeight:800, color:"#1a1611", marginBottom:2 }}>
-              ¡Van reservada!
+              ¡Solicitud enviada!
             </h2>
             <p style={{ fontSize:"0.76rem", color:"#9a9080", lineHeight:1.4 }}>
-              Tu van está reservada
+              Te confirmamos disponibilidad y horario por WhatsApp
             </p>
           </div>
         </div>
@@ -570,29 +406,33 @@ export default function Reservas() {
             </div>
           </div>
 
-          {/* Grilla 2x2 */}
+          {/* Grilla */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:0 }}>
             <div style={{ padding:"10px 16px", borderBottom:"1px solid #D4CBB8", borderRight:"1px solid #D4CBB8" }}>
-              <div style={{ fontSize:"0.62rem", color:"#9a9080", fontWeight:700, letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:3 }}>Salida</div>
-              <div style={{ fontSize:"0.8rem", fontWeight:700, color:"#1a1611" }}>{fmt(fecha)}</div>
-              <div style={{ fontSize:"0.78rem", fontWeight:600, color:"#6b5e4e", marginTop:1 }}>{hora}</div>
+              <div style={{ fontSize:"0.62rem", color:"#9a9080", fontWeight:700, letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:3 }}>Ida</div>
+              <div style={{ fontSize:"0.8rem", fontWeight:700, color:"#1a1611" }}>{fmt(fechaVan)}</div>
+              <div style={{ fontSize:"0.78rem", fontWeight:600, color:"#6b5e4e", marginTop:1 }}>{horaVan || "Hora a coordinar"}</div>
             </div>
             <div style={{ padding:"10px 16px", borderBottom:"1px solid #D4CBB8" }}>
-              <div style={{ fontSize:"0.62rem", color:"#9a9080", fontWeight:700, letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:3 }}>Servicio</div>
-              <div style={{ fontSize:"0.8rem", fontWeight:700, color:"#1a1611" }}>
-                Van privada
+              <div style={{ fontSize:"0.62rem", color:"#9a9080", fontWeight:700, letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:3 }}>
+                {esIdaVuelta ? "Regreso" : "Servicio"}
               </div>
-              <div style={{ display:"flex", alignItems:"center", gap:2, marginTop:3 }}>
-                <span style={{ fontSize:"0.7rem", color:"#6b5e4e" }}>Exclusivo · {pasajeros} pax</span>
-              </div>
+              {esIdaVuelta ? (<>
+                <div style={{ fontSize:"0.8rem", fontWeight:700, color:"#1a1611" }}>{fmt(fechaRegreso)}</div>
+                <div style={{ fontSize:"0.78rem", fontWeight:600, color:"#6b5e4e", marginTop:1 }}>{horaRegreso || "Hora a coordinar"}</div>
+              </>) : (<>
+                <div style={{ fontSize:"0.8rem", fontWeight:700, color:"#1a1611" }}>Van privada</div>
+                <div style={{ fontSize:"0.7rem", color:"#6b5e4e", marginTop:3 }}>Exclusivo · {pasajeros} pax</div>
+              </>)}
             </div>
 
-            {/* Total */}
+            {/* Total referencial */}
             <div style={{ gridColumn:"1/-1", padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div>
                 <div style={{ fontSize:"0.62rem", color:"#9a9080", fontWeight:700, letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:2 }}>
-                  Total
+                  Valor referencial
                 </div>
+                <div style={{ fontSize:"0.68rem", color:"#16a34a", fontWeight:600 }}>✓ Sin pago online</div>
               </div>
               <span style={{ fontSize:"1.45rem", fontWeight:800, color:"#1a1611", letterSpacing:"-0.02em" }}>
                 {precio(montoTotal)}
@@ -602,137 +442,17 @@ export default function Reservas() {
         </div>
 
         {/* CTA WhatsApp */}
-        <button className="btn-wa" onClick={() => abrirWhatsApp(reservaId)} style={{ marginBottom:6 }}>
-          <IcoWA/> Confirmar por WhatsApp
+        <button className="btn-wa" onClick={abrirWhatsApp} style={{ marginBottom:6 }}>
+          <IcoWA/> Abrir WhatsApp de nuevo
         </button>
         <p style={{ fontSize:"0.68rem", color:"#9a9080", textAlign:"center", marginBottom:10, lineHeight:1.4 }}>
-          Envía los detalles a nuestro equipo por WhatsApp
+          ¿No se abrió el chat? Toca aquí para reenviar los detalles
         </p>
 
-        <div style={{ display:"flex", gap:8, width:"100%" }}>
-          <button className="btn-ghost" onClick={reset} style={{ flex:1, padding:"12px" }}>Nueva reserva</button>
-          <button className="btn-mis-reservas" style={{ flex:1, margin:0, padding:"12px" }} onClick={() => document.dispatchEvent(new CustomEvent("openMisReservas"))}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-              <rect x="9" y="3" width="6" height="4" rx="1"/>
-            </svg>
-            Mis reservas
-          </button>
-        </div>
+        <button className="btn-ghost" onClick={reset} style={{ width:"100%", padding:"12px" }}>Nueva reserva</button>
       </div>
     </div>
   );
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // PANTALLA: CONFIRMAR
-  // ════════════════════════════════════════════════════════════════════════════
-  if (pantalla === "confirmar") {
-    if (!cargandoAuth && !usuario) return (
-      <div ref={topRef} style={S.root}>
-        <style>{css}</style>
-        <div style={S.wrap}>
-          <div style={S.topBar}>
-            <button className="btn-back" onClick={() => ir("inicio")}><IcoChevron dir="left" c="#1a1611" size={20}/></button>
-            <span style={S.topTitle}>Confirmar viaje</span>
-            <div style={{ width:44 }}/>
-          </div>
-          <div style={{ textAlign:"center", padding:"2rem 0 1rem" }}>
-            <div style={{ fontSize:"2rem", marginBottom:10 }}>🔐</div>
-            <h3 style={{ fontFamily:"'Syne',sans-serif", fontSize:"1.2rem", fontWeight:800, color:"#1a1611", marginBottom:6 }}>Inicia sesión para confirmar</h3>
-            <p style={{ color:"#9a9080", fontSize:"0.82rem", lineHeight:1.6, marginBottom:20 }}>Tus datos se cargan automáticamente.<br/>No necesitas escribir nada al reservar.</p>
-            <button className="btn-confirmar" onClick={() => document.querySelector('.hdr__signin, .hdr__register')?.click()}>
-              Iniciar sesión / Registrarse
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-
-    return (
-      <div ref={topRef} style={S.root}>
-        <style>{css}</style>
-        <div style={S.wrap}>
-          <div style={S.topBar}>
-            <button className="btn-back" onClick={() => ir("inicio")}><IcoChevron dir="left" c="#1a1611" size={20}/></button>
-            <span style={S.topTitle}>Confirmar viaje</span>
-            <div style={{ width:44 }}/>
-          </div>
-          <div style={S.rutaPill} className="fade-in">
-            <div style={S.rutaDot}/>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={S.rutaTexto}>{origen?.label}</div>
-              <div style={S.rutaLinea}/>
-              <div style={S.rutaTexto}>{destino?.label}</div>
-            </div>
-            <div style={{ textAlign:"right", flexShrink:0 }}>
-              <div style={S.pillMeta}>{rutaData?.km}</div>
-              <div style={S.pillMeta}>{rutaData?.duracion}</div>
-            </div>
-          </div>
-          <div style={S.section}>
-            <Row label="Salida" val={`${fmt(fecha)} · ${hora}`}/>
-            {esIdaVuelta && <Row label="Regreso" val={horaFlexible ? "Hora flexible (WhatsApp)" : `${fmt(fecha)} · ${horaRegreso}`}/>}
-            <Row label="Pasajeros" val={
-              <span style={{ display:"flex", alignItems:"center", gap:4 }}>
-                {Array.from({ length: Math.min(pasajeros, 5) }).map((_, i) => (
-                  <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1611" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                  </svg>
-                ))}
-                {pasajeros > 5 && <span style={{ fontSize:"0.75rem", color:"#9a9080", fontWeight:600 }}>+{pasajeros - 5}</span>}
-                <span style={{ fontWeight:700, fontSize:"0.88rem", color:"#1a1611", marginLeft:2 }}>{pasajeros}</span>
-              </span>
-            }/>
-            <Row label="Tipo" val="Van privada"/>
-          </div>
-          <div style={{ ...S.section, paddingTop:0 }}>
-            <p style={S.sectionLabel}>Modo de pago</p>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-              {[
-                { id:"abono", label:"50% ahora", monto:precio(montoTotal*0.5), sub:"Resto al viajar" },
-                { id:"total", label:"Pago completo", monto:precio(montoTotal), sub:"Todo ahora" },
-              ].map(m => (
-                <button key={m.id} className={`pago-opt${modoPago===m.id?" pago-opt-on":""}`} onClick={() => setModoPago(m.id)}>
-                  <span style={{ fontSize:"0.78rem", opacity:0.7 }}>{m.label}</span>
-                  <span style={{ fontSize:"1.05rem", fontWeight:800 }}>{m.monto}</span>
-                  <span style={{ fontSize:"0.68rem", opacity:0.6 }}>{m.sub}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          {esIdaVuelta && horaFlexible && (
-            <div style={{ ...S.aviso, background:"rgba(59,130,246,0.08)", border:"1px solid rgba(59,130,246,0.25)", marginBottom:"1rem" }}>
-              <span style={{ fontSize:"1rem" }}>💬</span>
-              <span style={{ fontSize:"0.78rem", color:"#1e40af", lineHeight:1.5 }}>
-                <strong>Hora de regreso flexible.</strong> Te contactamos por WhatsApp para coordinar el horario de vuelta.
-              </span>
-            </div>
-          )}
-          <div style={S.section}>
-            <p style={S.sectionLabel}>Quién viaja</p>
-            <div style={S.usuarioRow}>
-              <div style={S.avatar}>{usuario?.avatar}</div>
-              <div>
-                <div style={{ fontSize:"0.9rem", fontWeight:700, color:"#1a1611" }}>{usuario?.nombre}</div>
-                <div style={{ fontSize:"0.75rem", color:"#9a9080" }}>{usuario?.telefono || usuario?.email}</div>
-              </div>
-            </div>
-          </div>
-          <div style={S.totalBox}>
-            <span style={{ fontSize:"0.85rem", color:"#9a9080" }}>A pagar ahora</span>
-            <span style={{ fontSize:"clamp(1.3rem,5vw,1.6rem)", fontWeight:800, color:"#1a1611" }}>{precio(aPagar)}</span>
-          </div>
-          {error && <div style={S.errBox}>⚠️ {error}</div>}
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            <button className="btn-flow" disabled={enviando} onClick={confirmar}>
-              {enviando ? <><span className="btn-spinner"/>Procesando...</> : <><IcoLock/>Pagar {precio(aPagar)} con Flow</>}
-            </button>
-            <p style={{ textAlign:"center", fontSize:"0.7rem", color:"#9a9080", lineHeight:1.5 }}>Pago seguro vía Flow.cl · El resto lo pagas el día del viaje</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // ════════════════════════════════════════════════════════════════════════════
   // PANTALLA: INICIO
@@ -784,6 +504,22 @@ export default function Reservas() {
           />
         </div>
 
+        {/* ── Ida / Ida y vuelta ── */}
+        <div style={S.segmento} className="fade-in">
+          {[
+            { id:"ida",        label:"Solo ida" },
+            { id:"ida_vuelta", label:"Ida y vuelta" },
+          ].map(op => (
+            <button
+              key={op.id}
+              onClick={() => setTipoRuta(op.id)}
+              className={`seg-opt${tipoRuta===op.id ? " seg-opt-on" : ""}`}
+            >
+              {op.label}
+            </button>
+          ))}
+        </div>
+
         {/* ── Tarjeta de servicio (Van Privada) ── */}
         <div style={{ display:"flex", marginTop:8 }} className="fade-in">
           <div
@@ -792,7 +528,7 @@ export default function Reservas() {
               border: sinCupoPrivado ? "1.5px solid #D4CBB8" : "2px solid #1a1611",
               background: sinCupoPrivado ? "#F5F2EC" : "#1a1611",
               transition:"all .18s",
-              display:"flex", flexDirection:"column", gap:6,
+              display:"flex", flexDirection:"column", gap:10,
               opacity: sinCupoPrivado ? 0.7 : 1,
               position:"relative", overflow:"hidden",
             }}
@@ -822,87 +558,48 @@ export default function Reservas() {
             </span>
 
             {/* Texto de fecha bloqueada */}
-            {sinCupoPrivado && fecha && (
+            {sinCupoPrivado && fechaVan && (
               <span style={{ fontSize:"0.72rem", color:"#B8AFA0", fontWeight:500 }}>
-                Sin disponibilidad · {new Date(fecha+"T12:00:00").toLocaleDateString("es-CL",{day:"numeric",month:"short"})}
+                Sin disponibilidad · {new Date(fechaVan+"T12:00:00").toLocaleDateString("es-CL",{day:"numeric",month:"short"})}
               </span>
             )}
 
-            {/* ── Fecha + Hora (iconos clicables) ── */}
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            {/* ── Ida ── */}
+            <FechaHora
+              titulo={esIdaVuelta ? "Ida" : null}
+              fecha={fechaVan}
+              setFecha={setFechaVan}
+              hora={horaVan}
+              setHora={setHoraVan}
+              min={hoy}
+              alerta={!!origen && !!destino && !fechaVan && !sinCupoPrivado}
+              apagada={sinCupoPrivado}
+            />
 
-              {/* Ícono calendario + texto día/mes */}
-              <div style={{ position:"relative", display:"flex", alignItems:"center", gap:5, cursor:"pointer" }}>
-                <div className={origen && destino && !fechaVan && !sinCupoPrivado ? "ico-pulse-red" : ""}>
-                  <IcoCal size={22} c={(() => {
-                    if (sinCupoPrivado) return "#C8BEA8";
-                    if (origen && destino && !fechaVan) return "#ef4444";
-                    if (fechaVan) return "#22c55e";
-                    return "#F5EDD8";
-                  })()}/>
-                </div>
-                {fechaVan && (
-                  <span style={{
-                    fontSize:"0.78rem", fontWeight:700, lineHeight:1,
-                    color: sinCupoPrivado ? "#B8AFA0" : "#F5EDD8",
-                    pointerEvents:"none",
-                  }}>
-                    {new Date(fechaVan + "T12:00:00").toLocaleDateString("es-CL", { day:"numeric", month:"short" })}
-                  </span>
-                )}
-                <input
-                  type="date"
-                  min={hoy}
-                  value={fechaVan}
-                  onChange={e => setFechaVan(e.target.value)}
-                  style={{ position:"absolute", opacity:0, cursor:"pointer", top:0, left:0, width:"100%", height:"100%", fontSize:16 }}
-                />
-              </div>
-
-              <div style={{ width:1, height:16, background:"rgba(245,237,216,0.3)", flexShrink:0 }}/>
-
-              {/* Ícono reloj + texto hora */}
-              <div style={{ position:"relative", display:"flex", alignItems:"center", gap:5, cursor:"pointer" }}>
-                <div className={origen && destino && !!fechaVan && !horaVan ? "ico-pulse-red" : ""}>
-                  <svg
-                    width="22" height="22" viewBox="0 0 24 24" fill="none"
-                    stroke={(() => {
-                      if (sinCupoPrivado) return "#C8BEA8";
-                      if (origen && destino && fechaVan && !horaVan) return "#ef4444";
-                      if (horaVan) return "#22c55e";
-                      return "#F5EDD8";
-                    })()}
-                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-                  </svg>
-                </div>
-                {horaVan && (
-                  <span style={{ fontSize:"0.78rem", fontWeight:700, lineHeight:1, color:"#F5EDD8", pointerEvents:"none" }}>
-                    {horaVan}
-                  </span>
-                )}
-                <select
-                  value={horaVan}
-                  onChange={e => setHoraVan(e.target.value)}
-                  style={{ position:"absolute", opacity:0, cursor:"pointer", top:0, left:0, width:"100%", height:"100%", fontSize:16 }}
-                >
-                  <option value="">—</option>
-                  {HORAS_BASE.map(h => <option key={h} value={h}>{h}</option>)}
-                </select>
-              </div>
-            </div>
+            {/* ── Regreso ── */}
+            {esIdaVuelta && (
+              <FechaHora
+                titulo="Regreso"
+                fecha={fechaRegreso}
+                setFecha={setFechaRegreso}
+                hora={horaRegreso}
+                setHora={setHoraRegreso}
+                min={fechaVan || hoy}
+                alerta={!!fechaVan && !fechaRegreso}
+                apagada={sinCupoRegreso}
+              />
+            )}
 
             {/* Precio + contador de pasajeros */}
             <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginTop:2 }}>
               <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
                 {(rutaData || calculando) && (
                   <span style={{ fontSize:"1.1rem", fontWeight:800, lineHeight:1, color:"#F5EDD8" }}>
-                    {rutaData ? precio(precioVan) : "…"}
+                    {rutaData ? precio(montoTotal) : "…"}
                   </span>
                 )}
                 <span style={{ fontSize:"0.72rem", color:"rgba(245,237,216,0.7)" }}>
-                  van completa · hasta {MAX_PAX_VAN} pasajeros
+                  {esIdaVuelta ? "ida y vuelta · " : ""}van completa · hasta {MAX_PAX_VAN} pasajeros
                 </span>
               </div>
 
@@ -959,85 +656,46 @@ export default function Reservas() {
         </div>
         {/* ── FIN tarjeta ── */}
 
-        {/* ── Regreso (ida y vuelta) ── */}
-        {esIdaVuelta && (
-          <div style={S.regresoBox} className="fade-in">
-            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-              <span style={{ fontSize:"0.75rem", fontWeight:700, color:"#1a1611", letterSpacing:"0.03em" }}>🔄 REGRESO — mismo día</span>
-              {fecha && (
-                <span style={{ fontSize:"0.7rem", color:"#9a9080", background:"#E8E0D0", padding:"2px 8px", borderRadius:99 }}>
-                  {fmt(fecha).split(",")[0]}
-                </span>
-              )}
-            </div>
-            <div style={{ opacity:horaFlexible?0.4:1, transition:"opacity .2s", pointerEvents:horaFlexible?"none":"auto" }}>
-              <HoraPicker
-                hora={horaRegreso}
-                setHora={setHoraRegreso}
-                horas={horasRetorno(hora)}
-                label="Hora de regreso"
-                placeholder={hora ? (horasRetorno(hora)[0] ? `Desde las ${horasRetorno(hora)[0]}` : "Sin horas disponibles") : "Elige hora de salida primero"}
-                disabled={!hora || horaFlexible}
-              />
-            </div>
-            <button
-              onClick={() => { setHoraFlexible(v => !v); if (!horaFlexible) setHoraRegreso(""); }}
-              style={{ display:"flex", alignItems:"center", gap:10, background:"none", border:"none", cursor:"pointer", padding:"10px 0 0", fontFamily:"'DM Sans',sans-serif" }}
-            >
-              <div style={{ width:38, height:22, borderRadius:11, background:horaFlexible?"#1a1611":"#D4CBB8", position:"relative", transition:"background .2s", flexShrink:0 }}>
-                <div style={{ position:"absolute", top:3, left:horaFlexible?19:3, width:16, height:16, borderRadius:"50%", background:"#fff", transition:"left .2s", boxShadow:"0 1px 3px rgba(0,0,0,.2)" }}/>
-              </div>
-              <span style={{ fontSize:"0.78rem", color:horaFlexible?"#1a1611":"#9a9080", fontWeight:horaFlexible?700:400, textAlign:"left", lineHeight:1.4 }}>
-                {horaFlexible
-                  ? <>Hora flexible — <span style={{ color:"#1a1611" }}>coordinamos por WhatsApp</span></>
-                  : "No sé la hora exacta de regreso"
-                }
-              </span>
-            </button>
-          </div>
-        )}
-
-        {esIdaVuelta && (
-          <div style={S.infoIV} className="fade-in">
-            <span>ℹ️</span>
-            <span>Ida y vuelta disponible <strong>solo el mismo día</strong>. Para otra fecha, reserva el regreso como un viaje aparte.</span>
-          </div>
-        )}
-
         {/* ── Botón principal ── */}
         <div style={{ marginTop:14, display:"flex", flexDirection:"column", gap:6 }}>
           <button
-            className={enviando ? "btn-confirmar btn-confirmar-loading" : "btn-confirmar"}
+            className="btn-wa"
             disabled={
-              !origen || !destino || !fecha || !hora || calculando || enviando ||
-              (esIdaVuelta && !horaFlexible && !horaRegreso) ||
-              sinCupoPrivado
+              !origen || !destino || !fechaVan || calculando ||
+              sinCupoPrivado || sinCupoRegreso ||
+              (esIdaVuelta && !fechaRegreso)
             }
-            onClick={reservarDirecto}
+            style={{
+              opacity: (!origen || !destino || !fechaVan || calculando || sinCupoPrivado || sinCupoRegreso || (esIdaVuelta && !fechaRegreso)) ? 0.45 : 1,
+              cursor:  (!origen || !destino || !fechaVan || calculando || sinCupoPrivado || sinCupoRegreso || (esIdaVuelta && !fechaRegreso)) ? "not-allowed" : "pointer",
+            }}
+            onClick={reservar}
           >
-            {enviando
-              ? <><span className="btn-spinner" style={{ marginRight:8 }}/> Procesando…</>
-              : calculando
-                ? <><span className="btn-spinner" style={{ marginRight:8 }}/> Calculando…</>
-                : sinCupoPrivado
-                  ? "Sin disponibilidad en esa fecha"
-                  : rutaData ? `Pagar abono — ${precio(precioVan * 0.5)}` : "Reservar van"
+            {calculando
+              ? <><span className="btn-spinner" style={{ marginRight:8 }}/> Calculando…</>
+              : <><IcoWA/> Reservar por WhatsApp{rutaData ? ` — ${precio(montoTotal)}` : ""}</>
             }
           </button>
           {origen && destino && (
             <p style={{ textAlign:"center", fontSize:"0.70rem", color:"#9a9080", lineHeight:1.5 }}>
-              Pago seguro vía Flow.cl · El resto lo pagas el día del viaje
+              Sin pago online · Confirmamos disponibilidad y horario por WhatsApp
             </p>
           )}
           {error && <div style={S.errBox}>⚠️ {error}</div>}
         </div>
 
         {/* ── Mensajes de validación ── */}
-        {esIdaVuelta && !horaFlexible && !horaRegreso && hora && (
+        {origen && destino && !fechaVan && (
           <p style={{ textAlign:"center", fontSize:"0.72rem", color:"#c0290e", marginTop:6 }}>
-            Elige hora de regreso o activa "No sé la hora exacta"
+            Elige la fecha de ida para continuar
           </p>
         )}
+        {esIdaVuelta && fechaVan && !fechaRegreso && (
+          <p style={{ textAlign:"center", fontSize:"0.72rem", color:"#c0290e", marginTop:6 }}>
+            Elige la fecha de regreso
+          </p>
+        )}
+
 
         {/* ── Destinos ── */}
         <div style={{ marginTop:32 }} className="fade-in">
@@ -1087,34 +745,60 @@ export default function Reservas() {
   );
 }
 
-// ── HoraPicker (usado solo en regreso) ────────────────────────────────────────
-function HoraPicker({ hora, setHora, horas=HORAS_BASE, label="Hora", placeholder="Elige hora", disabled=false }) {
-  const selectRef = useRef(null);
+// ── FechaHora (fecha obligatoria + hora opcional, dentro de la tarjeta) ──────
+function FechaHora({ titulo, fecha, setFecha, hora, setHora, min, alerta=false, apagada=false }) {
+  const colorFecha = apagada ? "#C8BEA8" : alerta ? "#ef4444" : fecha ? "#22c55e" : "#F5EDD8";
+  const colorHora  = apagada ? "#C8BEA8" : hora ? "#22c55e" : "#F5EDD8";
+  const texto      = apagada ? "#B8AFA0" : "#F5EDD8";
+
   return (
-    <div
-      style={{ ...S.pill, flex:1, cursor:disabled?"not-allowed":"pointer", opacity:disabled?0.5:1 }}
-      onClick={() => !disabled && selectRef.current?.focus()}
-    >
-      <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9a9080" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-        </svg>
-        <span style={{ fontSize:"0.72rem", color:"#9a9080", fontWeight:600, letterSpacing:"0.02em" }}>{label}</span>
-      </div>
-      <div style={{ position:"relative", display:"flex", alignItems:"center" }}>
-        <select
-          ref={selectRef}
-          value={hora}
-          onChange={e => setHora(e.target.value)}
-          disabled={disabled}
-          style={{ ...S.select, fontWeight:hora?700:400, color:hora?"#1a1611":"#9a9080", fontSize:"0.9rem", paddingRight:16 }}
-        >
-          <option value="">{placeholder}</option>
-          {horas.map(h => <option key={h} value={h}>{h}</option>)}
-        </select>
-        <svg style={{ position:"absolute", right:0, pointerEvents:"none" }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9a9080" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
+    <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+      {titulo && (
+        <span style={{ fontSize:"0.62rem", fontWeight:700, letterSpacing:"0.06em", textTransform:"uppercase", color:"rgba(245,237,216,0.55)" }}>
+          {titulo}
+        </span>
+      )}
+      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+
+        {/* Fecha (obligatoria) */}
+        <div style={{ position:"relative", display:"flex", alignItems:"center", gap:5, cursor:"pointer" }}>
+          <div className={alerta ? "ico-pulse-red" : ""}>
+            <IcoCal size={22} c={colorFecha}/>
+          </div>
+          <span style={{ fontSize:"0.78rem", fontWeight:700, lineHeight:1, color: fecha ? texto : "rgba(245,237,216,0.55)", pointerEvents:"none" }}>
+            {fecha
+              ? new Date(fecha + "T12:00:00").toLocaleDateString("es-CL", { day:"numeric", month:"short" })
+              : "Elegir fecha"}
+          </span>
+          <input
+            type="date"
+            min={min}
+            value={fecha}
+            onChange={e => setFecha(e.target.value)}
+            style={{ position:"absolute", opacity:0, cursor:"pointer", top:0, left:0, width:"100%", height:"100%", fontSize:16 }}
+          />
+        </div>
+
+        <div style={{ width:1, height:16, background:"rgba(245,237,216,0.3)", flexShrink:0 }}/>
+
+        {/* Hora (opcional — si queda en blanco se coordina por WhatsApp) */}
+        <div style={{ position:"relative", display:"flex", alignItems:"center", gap:5, cursor:"pointer" }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colorHora}
+            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+          </svg>
+          <span style={{ fontSize:"0.78rem", fontWeight:hora?700:500, lineHeight:1, color: hora ? texto : "rgba(245,237,216,0.55)", pointerEvents:"none" }}>
+            {hora || "Hora a coordinar"}
+          </span>
+          <select
+            value={hora}
+            onChange={e => setHora(e.target.value)}
+            style={{ position:"absolute", opacity:0, cursor:"pointer", top:0, left:0, width:"100%", height:"100%", fontSize:16 }}
+          >
+            <option value="">Hora a coordinar</option>
+            {HORAS_BASE.map(h => <option key={h} value={h}>{h}</option>)}
+          </select>
+        </div>
       </div>
     </div>
   );
@@ -1380,12 +1064,12 @@ const css = `
   .btn-confirmar:hover:not(:disabled) { background:#2d2820; transform:translateY(-1px); }
   .btn-confirmar:disabled { background:#D4CBB8; color:#9a9080; cursor:not-allowed; box-shadow:none; }
   .btn-wa { width:100%; padding:15px; display:flex; align-items:center; justify-content:center; gap:8px; background:#22c55e; color:#fff; border:none; border-radius:14px; font-size:0.95rem; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all .2s; }
-  .btn-wa:hover { background: #16a34a; }
+  .btn-wa:hover:not(:disabled) { background: #16a34a; }
+  .seg-opt { flex:1; padding:9px 10px; border:none; border-radius:9px; background:transparent; color:#6b5e4e; font-size:0.82rem; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all .18s; }
+  .seg-opt:not(.seg-opt-on):hover { color:#1a1611; }
+  .seg-opt-on { background:#1a1611; color:#F5EDD8; box-shadow:0 2px 8px rgba(26,22,17,.18); }
   .btn-ghost { width:100%; padding:14px; background:transparent; color:#9a9080; border:1.5px solid #D4CBB8; border-radius:14px; font-size:0.88rem; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all .2s; }
   .btn-ghost:hover { border-color:#9a9080; color:#3d3629; }
-  .pago-opt { display:flex; flex-direction:column; gap:4px; padding:1rem; border-radius:14px; border:1.5px solid #D4CBB8; background:#EDE5D0; color:#1a1611; cursor:pointer; transition:all .2s; font-family:'DM Sans',sans-serif; text-align:left; }
-  .pago-opt:hover { border-color:#9a9080; }
-  .pago-opt-on { border-color:#1a1611 !important; background:#1a1611 !important; color:#F5EDD8 !important; }
   .ruta-row { display:flex; align-items:center; gap:14px; padding:14px 4px; width:100%; background:transparent; border:none; border-bottom:1px solid #E8E0D0; cursor:pointer; transition:all .15s; font-family:'DM Sans',sans-serif; }
   .ruta-row:hover { padding-left:10px; padding-right:10px; background:#EDE5D0; border-radius:12px; border-bottom-color:transparent; }
   .ruta-row:last-child { border-bottom:none; }
@@ -1418,30 +1102,12 @@ const S = {
   dropIcon:    { width:34, height:34, borderRadius:10, background:"#F0EBE0", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1rem", flexShrink:0 },
   dropAviso:   { display:"flex", alignItems:"flex-start", gap:8, padding:"10px 16px", margin:"4px 8px 8px", background:"#FDF9F3", border:"1px solid #E8E0D0", borderRadius:10, fontSize:"0.72rem", color:"#9a9080", lineHeight:1.5 },
   searchRow:   { display:"flex", alignItems:"center", gap:10, padding:"10px 14px" },
-  select:      { flex:1, background:"transparent", border:"none", outline:"none", fontSize:"0.95rem", fontFamily:"'DM Sans',sans-serif", cursor:"pointer", fontWeight:500 },
   dotOrigen:   { width:10, height:10, borderRadius:"50%", border:"2.5px solid #1a1611", flexShrink:0 },
   dotDestino:  { width:10, height:10, borderRadius:2, background:"#1a1611", flexShrink:0 },
-  pill:        { background:"#EDE5D0", border:"1px solid #D4CBB8", borderRadius:14, padding:"11px 16px", display:"flex", flexDirection:"column", gap:3, position:"relative", boxShadow:"0 2px 10px rgba(26,22,17,.05)" },
   rutaIcoSmall:{ width:38, height:38, borderRadius:10, background:"#E8E0D0", border:"1px solid #D4CBB8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.1rem", flexShrink:0 },
-  topBar:      { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"1.5rem 0 1rem" },
-  topTitle:    { fontFamily:"'Syne',sans-serif", fontSize:"clamp(0.9rem,4vw,1.05rem)", fontWeight:800, color:"#1a1611" },
-  rutaPill:    { background:"#EDE5D0", border:"1px solid #D4CBB8", borderRadius:16, padding:"14px 16px", display:"flex", alignItems:"center", gap:12, marginBottom:16, boxShadow:"0 2px 12px rgba(26,22,17,.06)", overflow:"hidden" },
-  rutaDot:     { display:"flex", flexDirection:"column", alignItems:"center", gap:2, flexShrink:0 },
-  rutaTexto:   { fontSize:"0.88rem", fontWeight:700, color:"#1a1611", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" },
-  rutaLinea:   { height:14, width:1, background:"#D4CBB8", margin:"4px 0" },
-  pillMeta:    { fontSize:"0.72rem", color:"#9a9080", lineHeight:1.8, whiteSpace:"nowrap" },
-  section:     { padding:"0.5rem 0 1rem", borderBottom:"1px solid #E8E0D0", marginBottom:"1rem" },
   sectionLabel:{ fontSize:"0.72rem", fontWeight:700, color:"#9a9080", letterSpacing:"0.06em", marginBottom:"0.6rem" },
-  aviso:       { display:"flex", gap:10, background:"rgba(245,193,7,0.1)", border:"1px solid rgba(245,193,7,0.3)", borderRadius:12, padding:"0.9rem", marginBottom:"1rem" },
-  usuarioRow:  { display:"flex", alignItems:"center", gap:12 },
   avatar:      { width:42, height:42, borderRadius:"50%", background:"#1a1611", color:"#F5EDD8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.8rem", fontWeight:800, flexShrink:0 },
-  totalBox:    { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"1rem 0", marginBottom:"1rem" },
   errBox:      { padding:"0.8rem 1rem", background:"rgba(192,41,14,0.08)", border:"1px solid rgba(192,41,14,0.2)", borderRadius:10, color:"#c0290e", fontSize:"0.82rem", marginBottom:"0.75rem" },
   okWrap:      { maxWidth:480, width:"100%", margin:"0 auto", padding:"clamp(1rem,4vw,1.8rem) clamp(14px,4vw,24px) 60px", display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center", boxSizing:"border-box" },
-  okCircle:    { width:72, height:72, borderRadius:"50%", background:"#1a1611", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20 },
-  okTitle:     { fontFamily:"'Syne',sans-serif", fontSize:"clamp(1.4rem,5vw,1.8rem)", fontWeight:800, color:"#1a1611", marginBottom:8 },
-  okSub:       { fontSize:"0.85rem", color:"#9a9080", lineHeight:1.6, maxWidth:300, marginBottom:24 },
-  okCard:      { background:"#EDE5D0", border:"1px solid #D4CBB8", borderRadius:16, padding:"0.5rem 1.25rem", width:"100%", marginBottom:24 },
-  regresoBox:  { background:"#F0EBE0", border:"1.5px solid #D4CBB8", borderRadius:14, padding:"14px 16px", marginTop:10 },
-  infoIV:      { display:"flex", alignItems:"flex-start", gap:8, background:"#F5EDD8", border:"1px solid #E8D8B0", borderRadius:10, padding:"10px 14px", marginTop:8, fontSize:"0.74rem", color:"#6b5e4e", lineHeight:1.5 },
+  segmento:    { display:"flex", gap:4, background:"#EDE5D0", border:"1px solid #D4CBB8", borderRadius:12, padding:4, marginTop:12 },
 };

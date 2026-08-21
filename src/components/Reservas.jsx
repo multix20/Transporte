@@ -1,21 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import supabase from "../lib/supabase";
 
-const WHATSAPP_NUMBER    = "56951569704";
-const MAX_PAX_VAN        = 8;
-const PAX_COMPARTIDO     = 10;
-const MARGEN_COMP        = 1.25;
-const RECARGO_IDA_VUELTA = 1.5;
+const WHATSAPP_NUMBER = "56951569704";
+const MAX_PAX_VAN     = 8;
 
-const PRECIO_VAN_BASE = 40000;
-const PRECIO_KM_VAN   = 1000;
-const PRECIO_MIN_VAN  = 40000;
+// Ida y vuelta: el mismo día la van espera; en otra fecha son dos viajes.
+const RECARGO_IV_MISMO_DIA = 1.5;
+const RECARGO_IV_OTRO_DIA  = 2;
 
-const paxDesdeVan = (precioVan) =>
-  Math.round((precioVan * MARGEN_COMP) / PAX_COMPARTIDO / 500) * 500;
+const PRECIO_VAN_BASE = 40000;   // tarifa plana hasta 40 km
+const PRECIO_KM_VAN   = 1000;    // $ por km cuando no hay tarifa fija
 
-const aplicarRecargo = (monto, esIdaVuelta) =>
-  esIdaVuelta ? Math.round(monto * RECARGO_IDA_VUELTA) : monto;
+const aplicarRecargo = (monto, factor) => Math.round(monto * factor);
 
 const HORAS_BASE = Array.from({ length: 17 }, (_, i) => `${String(i + 6).padStart(2,"0")}:00`);
 
@@ -117,78 +113,80 @@ const ZONAS = [
   { id:"victoria",   lat:-38.2317, lng:-72.3317, radio:8  },
   { id:"loncoche",   lat:-39.3667, lng:-72.6333, radio:8  },
   { id:"pitrufquen", lat:-38.9833, lng:-72.6500, radio:8  },
+  { id:"panguipulli",lat:-39.6417, lng:-72.3333, radio:10 },
+  { id:"valdivia",   lat:-39.8142, lng:-73.2459, radio:12 },
 ];
 const TARIFAS_FIJAS = {
-  "temuco-aeropuerto":     { van:40000, persona:paxDesdeVan(40000) },
-  "aeropuerto-temuco":     { van:40000, persona:paxDesdeVan(40000) },
-  "aeropuerto-pucon":      { van:95000, persona:paxDesdeVan(95000) },
-  "pucon-aeropuerto":      { van:95000, persona:paxDesdeVan(95000) },
-  "aeropuerto-villarrica": { van:80000, persona:paxDesdeVan(80000) },
-  "villarrica-aeropuerto": { van:80000, persona:paxDesdeVan(80000) },
-  "pucon-villarrica":      { van:40000, persona:paxDesdeVan(40000) },
-  "villarrica-pucon":      { van:40000, persona:paxDesdeVan(40000) },
-  "temuco-pucon":          { van:95000, persona:paxDesdeVan(95000) },
-  "pucon-temuco":          { van:95000, persona:paxDesdeVan(95000) },
-  "temuco-villarrica":     { van:80000, persona:paxDesdeVan(80000) },
-  "villarrica-temuco":     { van:80000, persona:paxDesdeVan(80000) },
-  "temuco-freire":         { van:45000, persona:paxDesdeVan(45000) },
-  "freire-temuco":         { van:45000, persona:paxDesdeVan(45000) },
-  "aeropuerto-freire":     { van:50000, persona:paxDesdeVan(50000) },
-  "freire-aeropuerto":     { van:50000, persona:paxDesdeVan(50000) },
-  "temuco-gorbea":         { van:60000, persona:paxDesdeVan(60000) },
-  "gorbea-temuco":         { van:60000, persona:paxDesdeVan(60000) },
-  "aeropuerto-gorbea":     { van:65000, persona:paxDesdeVan(65000) },
-  "gorbea-aeropuerto":     { van:65000, persona:paxDesdeVan(65000) },
-  "temuco-victoria":       { van:90000, persona:paxDesdeVan(90000) },
-  "victoria-temuco":       { van:90000, persona:paxDesdeVan(90000) },
-  "aeropuerto-victoria":   { van:95000, persona:paxDesdeVan(95000) },
-  "victoria-aeropuerto":   { van:95000, persona:paxDesdeVan(95000) },
-  "temuco-loncoche":       { van:70000, persona:paxDesdeVan(70000) },
-  "loncoche-temuco":       { van:70000, persona:paxDesdeVan(70000) },
-  "aeropuerto-loncoche":   { van:75000, persona:paxDesdeVan(75000) },
-  "loncoche-aeropuerto":   { van:75000, persona:paxDesdeVan(75000) },
-  "temuco-pitrufquen":     { van:40000, persona:paxDesdeVan(40000) },
-  "pitrufquen-temuco":     { van:40000, persona:paxDesdeVan(40000) },
-  "aeropuerto-panguipulli": { van:110000, persona:paxDesdeVan(110000) },
-  "panguipulli-aeropuerto": { van:110000, persona:paxDesdeVan(110000) },
-  "aeropuerto-valdivia":    { van:140000, persona:paxDesdeVan(140000) },
-  "valdivia-aeropuerto":    { van:140000, persona:paxDesdeVan(140000) },
-  "temuco-panguipulli":     { van:110000, persona:paxDesdeVan(110000) },
-  "panguipulli-temuco":     { van:110000, persona:paxDesdeVan(110000) },
-  "temuco-valdivia":        { van:140000, persona:paxDesdeVan(140000) },
-  "valdivia-temuco":        { van:140000, persona:paxDesdeVan(140000) },
-  "pucon-panguipulli":      { van:50000,  persona:paxDesdeVan(50000)  },
-  "panguipulli-pucon":      { van:50000,  persona:paxDesdeVan(50000)  },
-  "aeropuerto-pitrufquen": { van:42000, persona:paxDesdeVan(42000) },
-  "pitrufquen-aeropuerto": { van:42000, persona:paxDesdeVan(42000) },
+  "temuco-aeropuerto":     40000,
+  "aeropuerto-temuco":     40000,
+  "aeropuerto-pucon":      95000,
+  "pucon-aeropuerto":      95000,
+  "aeropuerto-villarrica": 80000,
+  "villarrica-aeropuerto": 80000,
+  "pucon-villarrica":      40000,
+  "villarrica-pucon":      40000,
+  "temuco-pucon":          95000,
+  "pucon-temuco":          95000,
+  "temuco-villarrica":     80000,
+  "villarrica-temuco":     80000,
+  "temuco-freire":         45000,
+  "freire-temuco":         45000,
+  "aeropuerto-freire":     50000,
+  "freire-aeropuerto":     50000,
+  "temuco-gorbea":         60000,
+  "gorbea-temuco":         60000,
+  "aeropuerto-gorbea":     65000,
+  "gorbea-aeropuerto":     65000,
+  "temuco-victoria":       90000,
+  "victoria-temuco":       90000,
+  "aeropuerto-victoria":   95000,
+  "victoria-aeropuerto":   95000,
+  "temuco-loncoche":       70000,
+  "loncoche-temuco":       70000,
+  "aeropuerto-loncoche":   75000,
+  "loncoche-aeropuerto":   75000,
+  "temuco-pitrufquen":     40000,
+  "pitrufquen-temuco":     40000,
+  "aeropuerto-panguipulli": 110000,
+  "panguipulli-aeropuerto": 110000,
+  "aeropuerto-valdivia":    140000,
+  "valdivia-aeropuerto":    140000,
+  "temuco-panguipulli":     110000,
+  "panguipulli-temuco":     110000,
+  "temuco-valdivia":        140000,
+  "valdivia-temuco":        140000,
+  "pucon-panguipulli":      50000,
+  "panguipulli-pucon":      50000,
+  "aeropuerto-pitrufquen": 42000,
+  "pitrufquen-aeropuerto": 42000,
 };
 
 function detectarZona(lat, lng) {
   const R = 6371;
+  // Las zonas se solapan (el aeropuerto está a 3,6 km de Freire), así que
+  // gana la más cercana y no la primera que aparezca en la lista.
+  let mejor = null, menorDist = Infinity;
   for (const z of ZONAS) {
     const dLat = (lat-z.lat)*Math.PI/180, dLng = (lng-z.lng)*Math.PI/180;
     const a = Math.sin(dLat/2)**2 + Math.cos(z.lat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dLng/2)**2;
-    if (R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)) <= z.radio) return z.id;
+    const dist = R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+    if (dist <= z.radio && dist < menorDist) { mejor = z.id; menorDist = dist; }
   }
-  return null;
+  return mejor;
 }
 
 function calcularTarifas(distanciaMetros, origenObj, destinoObj) {
   const km = Math.round(distanciaMetros/1000);
-  const idO = origenObj?.id, idD = destinoObj?.id;
-  if (idO && idD && TARIFAS_FIJAS[`${idO}-${idD}`]) {
-    const f = TARIFAS_FIJAS[`${idO}-${idD}`];
-    return { persona:f.persona, van:f.van, km:`${km} km` };
-  }
-  const zonaO = idO || detectarZona(origenObj?.lat,origenObj?.lng);
-  const zonaD = idD || detectarZona(destinoObj?.lat,destinoObj?.lng);
-  const key   = zonaO && zonaD ? `${zonaO}-${zonaD}` : null;
-  if (key && TARIFAS_FIJAS[key]) {
-    const f = TARIFAS_FIJAS[key];
-    return { persona:f.persona, van:f.van, km:`${km} km` };
-  }
-  const van = km<=40 ? PRECIO_VAN_BASE : Math.max(PRECIO_MIN_VAN, Math.round(km*PRECIO_KM_VAN/1000)*1000);
-  return { persona:paxDesdeVan(van), van, km:`${km} km` };
+
+  // La zona vale igual si el lugar vino de la lista o si se escribió a mano,
+  // para que la misma ruta no tenga dos precios.
+  const zonaO = origenObj?.id  || detectarZona(origenObj?.lat,  origenObj?.lng);
+  const zonaD = destinoObj?.id || detectarZona(destinoObj?.lat, destinoObj?.lng);
+  const fija  = zonaO && zonaD ? TARIFAS_FIJAS[`${zonaO}-${zonaD}`] : null;
+  if (fija) return { van: fija, km };
+
+  const van = km <= 40 ? PRECIO_VAN_BASE : km * PRECIO_KM_VAN;
+  return { van, km };
 }
 
 async function buscarDirecciones(query) {
@@ -290,7 +288,10 @@ export default function Reservas() {
     : "";
 
   const precioBaseVan = rutaData?.van || 0;
-  const precioVan     = aplicarRecargo(precioBaseVan, esIdaVuelta);
+  // Mismo día la van espera (×1,5); otra fecha son dos viajes (×2).
+  const regresoOtroDia = esIdaVuelta && !!fechaVan && !!fechaRegreso && fechaRegreso !== fechaVan;
+  const factorIV = !esIdaVuelta ? 1 : regresoOtroDia ? RECARGO_IV_OTRO_DIA : RECARGO_IV_MISMO_DIA;
+  const precioVan     = aplicarRecargo(precioBaseVan, factorIV);
 
   const montoTotal = rutaData ? precioVan : 0;
 
@@ -312,7 +313,7 @@ export default function Reservas() {
       guardar(origen); guardar(destino);
       const metros  = await obtenerDistancia(origen, destino);
       const tarifas = calcularTarifas(metros, origen, destino);
-      setRutaDataDyn({ ...tarifas, duracion:`~${Math.round(metros/1000/60)} min` });
+      setRutaDataDyn(tarifas);
     } catch {
       setError("No se pudo calcular la ruta.");
     } finally {
@@ -334,8 +335,8 @@ export default function Reservas() {
       `📅 Ida: ${linea(fechaVan, horaVan)}\n` +
       (esIdaVuelta ? `↩️ Regreso: ${linea(fechaRegreso, horaRegreso)}\n` : "") +
       `👥 ${pasajeros} ${pasajeros === 1 ? "pasajero" : "pasajeros"}\n` +
-      `🎫 ${esIdaVuelta ? "Ida y vuelta" : "Solo ida"}\n` +
-      (rutaData ? `💰 Valor referencial: ${precio(montoTotal)}\n` : "") +
+      `🎫 ${esIdaVuelta ? (regresoOtroDia ? "Ida y vuelta (otra fecha)" : "Ida y vuelta (mismo día)") : "Solo ida"}\n` +
+      (rutaData ? `📏 ~${rutaData.km} km\n💰 Valor referencial: ${precio(montoTotal)}\n` : "") +
       `\n¿Me confirmas disponibilidad y horario?`
     );
   };
@@ -600,7 +601,7 @@ export default function Reservas() {
                   </span>
                 )}
                 <span style={{ fontSize:"0.72rem", color:"rgba(245,237,216,0.7)" }}>
-                  {esIdaVuelta ? "ida y vuelta · " : ""}van completa · hasta {MAX_PAX_VAN} pasajeros
+                  {esIdaVuelta ? (regresoOtroDia ? "ida y vuelta, otra fecha · " : "ida y vuelta · ") : ""}van completa · hasta {MAX_PAX_VAN} pasajeros
                 </span>
               </div>
 
@@ -686,15 +687,15 @@ export default function Reservas() {
           <p style={S.sectionLabel}>Destinos</p>
           <div style={{ display:"flex", flexDirection:"column" }}>
             {[
-              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[1], label:"Temuco ZCO → Pucón",        meta:`~95 km · van privada ${precio(95000)}`,  ico:"plane"    },
-              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[2], label:"Temuco ZCO → Villarrica",   meta:`~80 km · van privada ${precio(80000)}`,  ico:"plane"    },
-              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[3], label:"Temuco ZCO → Panguipulli",  meta:`~110 km · van privada ${precio(110000)}`, ico:"plane"  },
-              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[4], label:"Temuco ZCO → Valdivia",     meta:`~140 km · van privada ${precio(140000)}`, ico:"plane"  },
-              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[5], label:"Temuco ZCO → Victoria",     meta:`~90 km · van privada ${precio(90000)}`,  ico:"plane"    },
-              { o:PUNTOS_FRECUENTES[1], d:PUNTOS_FRECUENTES[0], label:"Pucón → Temuco ZCO",        meta:`~95 km · van privada ${precio(95000)}`,  ico:"mountain" },
-              { o:PUNTOS_FRECUENTES[2], d:PUNTOS_FRECUENTES[0], label:"Villarrica → Temuco ZCO",   meta:`~80 km · van privada ${precio(80000)}`,  ico:"city"     },
-              { o:PUNTOS_FRECUENTES[3], d:PUNTOS_FRECUENTES[0], label:"Panguipulli → Temuco ZCO",  meta:`~110 km · van privada ${precio(110000)}`, ico:"city"   },
-              { o:PUNTOS_FRECUENTES[4], d:PUNTOS_FRECUENTES[0], label:"Valdivia → Temuco ZCO",     meta:`~140 km · van privada ${precio(140000)}`, ico:"city"   },
+              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[1], label:"Temuco ZCO → Pucón",        meta:`~95 km · van privada ${precio(TARIFAS_FIJAS["aeropuerto-pucon"])}`,  ico:"plane"    },
+              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[2], label:"Temuco ZCO → Villarrica",   meta:`~80 km · van privada ${precio(TARIFAS_FIJAS["aeropuerto-villarrica"])}`,  ico:"plane"    },
+              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[3], label:"Temuco ZCO → Panguipulli",  meta:`~110 km · van privada ${precio(TARIFAS_FIJAS["aeropuerto-panguipulli"])}`, ico:"plane"  },
+              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[4], label:"Temuco ZCO → Valdivia",     meta:`~140 km · van privada ${precio(TARIFAS_FIJAS["aeropuerto-valdivia"])}`, ico:"plane"  },
+              { o:PUNTOS_FRECUENTES[0], d:PUNTOS_FRECUENTES[5], label:"Temuco ZCO → Victoria",     meta:`~90 km · van privada ${precio(TARIFAS_FIJAS["aeropuerto-victoria"])}`,  ico:"plane"    },
+              { o:PUNTOS_FRECUENTES[1], d:PUNTOS_FRECUENTES[0], label:"Pucón → Temuco ZCO",        meta:`~95 km · van privada ${precio(TARIFAS_FIJAS["pucon-aeropuerto"])}`,  ico:"mountain" },
+              { o:PUNTOS_FRECUENTES[2], d:PUNTOS_FRECUENTES[0], label:"Villarrica → Temuco ZCO",   meta:`~80 km · van privada ${precio(TARIFAS_FIJAS["villarrica-aeropuerto"])}`,  ico:"city"     },
+              { o:PUNTOS_FRECUENTES[3], d:PUNTOS_FRECUENTES[0], label:"Panguipulli → Temuco ZCO",  meta:`~110 km · van privada ${precio(TARIFAS_FIJAS["panguipulli-aeropuerto"])}`, ico:"city"   },
+              { o:PUNTOS_FRECUENTES[4], d:PUNTOS_FRECUENTES[0], label:"Valdivia → Temuco ZCO",     meta:`~140 km · van privada ${precio(TARIFAS_FIJAS["valdivia-aeropuerto"])}`, ico:"city"   },
             ].map((r,i) => (
               <button key={i} className="ruta-row" onClick={() => { setOrigen(r.o); setDestino(r.d); }}>
                 <div style={S.rutaIcoSmall}>

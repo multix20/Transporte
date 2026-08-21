@@ -294,6 +294,10 @@ export default function Reservas() {
 
   const montoTotal = rutaData ? precioVan : 0;
 
+  // Para reservar basta el trayecto: fecha y hora se pueden coordinar por WhatsApp
+  const bloqueado = !origen || !destino || calculando ||
+    sinCupoPrivado || (esIdaVuelta && sinCupoRegreso);
+
   const scroll = () => setTimeout(() => topRef.current?.scrollIntoView({ behavior:"smooth", block:"start" }), 40);
   const ir     = (p) => { setPantalla(p); scroll(); };
 
@@ -318,7 +322,8 @@ export default function Reservas() {
 
   // ── Reservar: se cierra por WhatsApp, sin pago online ─────────────────────
   const mensajeWhatsApp = () => {
-    const linea = (f, h) => `${fmt(f)}${h ? ` · ${h}` : " · hora a coordinar"}`;
+    const linea = (f, h) =>
+      f ? `${fmt(f)}${h ? ` · ${h}` : " · hora a coordinar"}` : "fecha y hora a coordinar";
     const quien = usuario
       ? `👤 *${usuario.nombre}*${usuario.telefono ? ` · ${usuario.telefono}` : ""}\n`
       : "";
@@ -341,11 +346,9 @@ export default function Reservas() {
 
   const reservar = () => {
     setError("");
-    if (!origen || !destino)  { setError("Elige origen y destino."); return; }
-    if (!fechaVan)            { setError("Elige la fecha de ida."); return; }
-    if (sinCupoPrivado)       { setError("La Van Privada no está disponible en esa fecha."); return; }
-    if (esIdaVuelta && !fechaRegreso) { setError("Elige la fecha de regreso."); return; }
-    if (sinCupoRegreso)       { setError("La fecha de regreso no está disponible."); return; }
+    if (!origen || !destino) { setError("Elige origen y destino."); return; }
+    if (sinCupoPrivado)      { setError("La Van Privada no está disponible en esa fecha."); return; }
+    if (sinCupoRegreso)      { setError("La fecha de regreso no está disponible."); return; }
     abrirWhatsApp();
     ir("ok");
   };
@@ -361,7 +364,7 @@ export default function Reservas() {
   // PANTALLA: OK — la venta se cierra por WhatsApp
   // ════════════════════════════════════════════════════════════════════════════
   if (pantalla === "ok") return (
-    <div ref={topRef} style={S.root}>
+    <div ref={topRef} id="reservas" style={S.root}>
       <style>{css}</style>
       <div style={S.okWrap} className="fade-in">
 
@@ -410,7 +413,7 @@ export default function Reservas() {
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:0 }}>
             <div style={{ padding:"10px 16px", borderBottom:"1px solid #D4CBB8", borderRight:"1px solid #D4CBB8" }}>
               <div style={{ fontSize:"0.62rem", color:"#9a9080", fontWeight:700, letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:3 }}>Ida</div>
-              <div style={{ fontSize:"0.8rem", fontWeight:700, color:"#1a1611" }}>{fmt(fechaVan)}</div>
+              <div style={{ fontSize:"0.8rem", fontWeight:700, color:"#1a1611" }}>{fechaVan ? fmt(fechaVan) : "A coordinar"}</div>
               <div style={{ fontSize:"0.78rem", fontWeight:600, color:"#6b5e4e", marginTop:1 }}>{horaVan || "Hora a coordinar"}</div>
             </div>
             <div style={{ padding:"10px 16px", borderBottom:"1px solid #D4CBB8" }}>
@@ -418,7 +421,7 @@ export default function Reservas() {
                 {esIdaVuelta ? "Regreso" : "Servicio"}
               </div>
               {esIdaVuelta ? (<>
-                <div style={{ fontSize:"0.8rem", fontWeight:700, color:"#1a1611" }}>{fmt(fechaRegreso)}</div>
+                <div style={{ fontSize:"0.8rem", fontWeight:700, color:"#1a1611" }}>{fechaRegreso ? fmt(fechaRegreso) : "A coordinar"}</div>
                 <div style={{ fontSize:"0.78rem", fontWeight:600, color:"#6b5e4e", marginTop:1 }}>{horaRegreso || "Hora a coordinar"}</div>
               </>) : (<>
                 <div style={{ fontSize:"0.8rem", fontWeight:700, color:"#1a1611" }}>Van privada</div>
@@ -458,7 +461,7 @@ export default function Reservas() {
   // PANTALLA: INICIO
   // ════════════════════════════════════════════════════════════════════════════
   return (
-    <div ref={topRef} style={S.root}>
+    <div ref={topRef} id="reservas" style={S.root}>
       <style>{css}</style>
       <div style={S.wrap}>
 
@@ -572,7 +575,6 @@ export default function Reservas() {
               hora={horaVan}
               setHora={setHoraVan}
               min={hoy}
-              alerta={!!origen && !!destino && !fechaVan && !sinCupoPrivado}
               apagada={sinCupoPrivado}
             />
 
@@ -585,7 +587,6 @@ export default function Reservas() {
                 hora={horaRegreso}
                 setHora={setHoraRegreso}
                 min={fechaVan || hoy}
-                alerta={!!fechaVan && !fechaRegreso}
                 apagada={sinCupoRegreso}
               />
             )}
@@ -660,14 +661,10 @@ export default function Reservas() {
         <div style={{ marginTop:14, display:"flex", flexDirection:"column", gap:6 }}>
           <button
             className="btn-wa"
-            disabled={
-              !origen || !destino || !fechaVan || calculando ||
-              sinCupoPrivado || sinCupoRegreso ||
-              (esIdaVuelta && !fechaRegreso)
-            }
+            disabled={bloqueado}
             style={{
-              opacity: (!origen || !destino || !fechaVan || calculando || sinCupoPrivado || sinCupoRegreso || (esIdaVuelta && !fechaRegreso)) ? 0.45 : 1,
-              cursor:  (!origen || !destino || !fechaVan || calculando || sinCupoPrivado || sinCupoRegreso || (esIdaVuelta && !fechaRegreso)) ? "not-allowed" : "pointer",
+              opacity: bloqueado ? 0.45 : 1,
+              cursor:  bloqueado ? "not-allowed" : "pointer",
             }}
             onClick={reservar}
           >
@@ -683,19 +680,6 @@ export default function Reservas() {
           )}
           {error && <div style={S.errBox}>⚠️ {error}</div>}
         </div>
-
-        {/* ── Mensajes de validación ── */}
-        {origen && destino && !fechaVan && (
-          <p style={{ textAlign:"center", fontSize:"0.72rem", color:"#c0290e", marginTop:6 }}>
-            Elige la fecha de ida para continuar
-          </p>
-        )}
-        {esIdaVuelta && fechaVan && !fechaRegreso && (
-          <p style={{ textAlign:"center", fontSize:"0.72rem", color:"#c0290e", marginTop:6 }}>
-            Elige la fecha de regreso
-          </p>
-        )}
-
 
         {/* ── Destinos ── */}
         <div style={{ marginTop:32 }} className="fade-in">
@@ -746,8 +730,8 @@ export default function Reservas() {
 }
 
 // ── FechaHora (fecha obligatoria + hora opcional, dentro de la tarjeta) ──────
-function FechaHora({ titulo, fecha, setFecha, hora, setHora, min, alerta=false, apagada=false }) {
-  const colorFecha = apagada ? "#C8BEA8" : alerta ? "#ef4444" : fecha ? "#22c55e" : "#F5EDD8";
+function FechaHora({ titulo, fecha, setFecha, hora, setHora, min, apagada=false }) {
+  const colorFecha = apagada ? "#C8BEA8" : fecha ? "#22c55e" : "#F5EDD8";
   const colorHora  = apagada ? "#C8BEA8" : hora ? "#22c55e" : "#F5EDD8";
   const texto      = apagada ? "#B8AFA0" : "#F5EDD8";
 
@@ -762,13 +746,11 @@ function FechaHora({ titulo, fecha, setFecha, hora, setHora, min, alerta=false, 
 
         {/* Fecha (obligatoria) */}
         <div style={{ position:"relative", display:"flex", alignItems:"center", gap:5, cursor:"pointer" }}>
-          <div className={alerta ? "ico-pulse-red" : ""}>
-            <IcoCal size={22} c={colorFecha}/>
-          </div>
+          <IcoCal size={22} c={colorFecha}/>
           <span style={{ fontSize:"0.78rem", fontWeight:700, lineHeight:1, color: fecha ? texto : "rgba(245,237,216,0.55)", pointerEvents:"none" }}>
             {fecha
               ? new Date(fecha + "T12:00:00").toLocaleDateString("es-CL", { day:"numeric", month:"short" })
-              : "Elegir fecha"}
+              : "Fecha a coordinar"}
           </span>
           <input
             type="date"
